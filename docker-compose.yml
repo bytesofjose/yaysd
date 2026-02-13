@@ -1,0 +1,22 @@
+services:
+  yaysd:
+    build:
+      context: .
+      network: host
+    container_name: yaysd
+    user: "1000:1000"
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./cookies.txt:/app/cookies.txt
+      - ${BASE_MUSIC_PATH}:/mnt/data_pool/music
+    restart: unless-stopped
+    networks:
+      - homelab-net
+
+networks:
+  homelab-net:
+    external: true

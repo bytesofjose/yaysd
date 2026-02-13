@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yet Another YouTube Song Downloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <h1>Yet Another YouTube Song Downloader</h1>
+        
+        <form id="downloadForm">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Pega la URL del video aquí..." required>
+                <button type="submit" id="downloadBtn">Descargar</button>
+            </div>
+        </form>
+
+        <div id="feedbackContainer" class="hidden">
+            <div class="loader hidden"></div>
+            <p id="feedbackText"></p>
+        </div>
+
+        <p class="subtitle">Desarrollado con ❤️ por <a href="https://github.com/joeis-dev">Joe</a></p>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

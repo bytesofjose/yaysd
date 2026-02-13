@@ -1,0 +1,6 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+yt-dlp>=2026.02.04
+pydantic-settings==2.1.0
+jinja2==3.1.3
+python-multipart==0.0.9
