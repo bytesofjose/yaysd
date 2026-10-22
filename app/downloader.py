@@ -58,6 +58,7 @@ def _new_job(url, ip=""):
             "finished": None,
             "skipped": 0,
             "dl_started": None,
+            "command": "",
         }
     return job_id
 
@@ -86,6 +87,7 @@ def _save_history(job_id):
             "id": job["id"],
             "url": job["url"],
             "ip": job.get("ip", ""),
+            "command": job.get("command", ""),
             "status": job["status"],
             "total": job.get("total", 0),
             "ok": job.get("total", 0) - job.get("failed", 0) if job.get("status") == "done" else job.get("done", 0),
@@ -95,14 +97,48 @@ def _save_history(job_id):
             "message": job.get("message", ""),
             "created": job.get("created"),
             "finished": job.get("finished"),
-            "items": [{"title": it.get("title", ""), "status": it.get("status", "")}
-                      for it in job.get("items", [])],
+            "items": [{"title": it.get("title", ""), "status": it.get("status", ""),
+                       "error": it.get("error", "")} for it in job.get("items", [])],
         }
         settings.HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(settings.HISTORY_FILE, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, ensure_ascii=False) + "\n")
     except Exception as e:
         logger.error(f"Job {job_id}: could not save history: {e}")
+
+
+history_lock = threading.Lock()
+
+
+def delete_history_record(job_id):
+    with history_lock:
+        try:
+            lines = settings.HISTORY_FILE.read_text(encoding="utf-8").strip().splitlines()
+        except (OSError, FileNotFoundError):
+            return False
+        kept = []
+        found = False
+        for line in lines:
+            try:
+                if _json.loads(line).get("id") == job_id:
+                    found = True
+                    continue
+            except Exception:
+                pass
+            kept.append(line)
+        if not found:
+            return False
+        settings.HISTORY_FILE.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        return True
+
+
+def clear_history():
+    with history_lock:
+        try:
+            settings.HISTORY_FILE.write_text("", encoding="utf-8")
+            return True
+        except OSError:
+            return False
 
 
 def read_history(limit=50):
@@ -217,8 +253,10 @@ def _snapshot(job_id):
         snap = {
             "url": job.get("url", ""),
             "ip": job.get("ip", ""),
+            "command": job.get("command", ""),
             "items": [{"url": it.get("url", ""), "title": it.get("title", ""),
-                       "status": it.get("status", "pending")} for it in job["items"]],
+                       "status": it.get("status", "pending"), "error": it.get("error", "")}
+                      for it in job["items"]],
             "created": job.get("created"),
         }
         (settings.STATE_DIR / f"{job_id}.json").write_text(
@@ -284,6 +322,7 @@ def _process(job_id):
         except Exception as e:
             failed += 1
             item_ok = False
+            err = str(e)[:300]
             logger.error(f"Job {job_id}: FAIL {entry['url']}: {e}")
             title = entry.get("title", entry["url"])
         with jobs_lock:
@@ -291,7 +330,8 @@ def _process(job_id):
             job_items = job.get("items", [])
             if i < len(job_items):
                 job_items[i] = {"url": entry["url"], "title": title,
-                                "status": "fail" if not item_ok else ("skipped" if item_skipped else "ok")}
+                                "status": "fail" if not item_ok else ("skipped" if item_skipped else "ok"),
+                                "error": "" if item_ok else err}
             jobs[job_id]["items"] = job_items
             jobs[job_id]["done"] = ok + failed + skipped
             jobs[job_id]["failed"] = failed
@@ -318,7 +358,8 @@ def run_job(job_id, url):
         _finish(job_id, "error", "No se encontraron videos en esa URL.")
         return
     _update(job_id, status="downloading", total=len(entries),
-            items=[{"url": e["url"], "title": e["title"], "status": "pending"} for e in entries])
+            command=f'yt-dlp --no-playlist -f "bestaudio/best" -o "/tmp/%(title)s.%(ext)s" "{url}"',
+            items=[{"url": e["url"], "title": e["title"], "status": "pending", "error": ""} for e in entries])
     _snapshot(job_id)
     _process(job_id)
 
@@ -389,8 +430,10 @@ def _resume_one_file(job_id, reason="Reanudado manualmente"):
         return False
     new_id = _new_job(snap.get("url", ""), snap.get("ip", ""))
     _update(new_id, status="downloading", total=len(items),
+            command=snap.get("command", ""),
             items=[{"url": it.get("url", ""), "title": it.get("title", ""),
-                    "status": it.get("status", "pending")} for it in items],
+                    "status": it.get("status", "pending"), "error": it.get("error", "")}
+                   for it in items],
             done=sum(1 for it in items if it.get("status") in ("ok", "skipped")),
             failed=sum(1 for it in items if it.get("status") == "fail"),
             skipped=sum(1 for it in items if it.get("status") == "skipped"),

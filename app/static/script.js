@@ -256,9 +256,12 @@ function jobCard(job, open = false) {
             <div><span class="text-dracula-comment">Inicio </span><span class="text-dracula-fg">${fmtTime(job.created)}</span></div>
             <div><span class="text-dracula-comment">Fin </span><span class="text-dracula-fg">${job.finished ? fmtTime(job.finished) : '—'}</span></div>
             <div class="col-span-2 md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                <span>✓ <span class="text-dracula-green font-semibold">${oks}</span> <span class="text-dracula-comment">descargadas</span></span>
-                <span>⏭ <span class="text-dracula-cyan font-semibold">${skipped}</span> <span class="text-dracula-comment">ya estaban</span></span>
+                <span>✓ <span class="text-dracula-green font-semibold">${oks + skipped}</span> <span class="text-dracula-comment">descargadas</span></span>
                 ${failed ? `<span>✗ <span class="text-dracula-red font-semibold">${failed}</span> <span class="text-dracula-comment">fallaron</span></span>` : ''}
+                <span class="ml-auto flex gap-2">
+                    <button data-act="details" data-id="${job.id}" class="px-3 py-1 text-xs rounded-full border border-dracula-cyan/60 text-dracula-cyan cursor-pointer transition-all hover:bg-dracula-cyan hover:text-dracula-bg">🔍 Detalles</button>
+                    ${!live ? `<button data-act="del" data-id="${job.id}" title="Borrar registro" class="px-3 py-1 text-xs rounded-full border border-dracula-comment/40 text-dracula-comment cursor-pointer transition-all hover:border-dracula-red hover:text-dracula-red">🗑</button>` : ''}
+                </span>
             </div>
         </div>
         ${progressHtml}
@@ -268,6 +271,51 @@ function jobCard(job, open = false) {
 }
 
 let historyTimer = null;
+let lastHistory = [];
+const detailOverlay = document.getElementById('detailOverlay');
+const detailBody = document.getElementById('detailBody');
+
+function findJob(id) {
+    return lastHistory.find((j) => j.id === id);
+}
+
+function openDetails(id) {
+    const job = findJob(id);
+    if (!job) return;
+    const [cls, label] = jobBadge(job);
+    const items = job.items || [];
+    const fails = items.filter((it) => it.status === 'fail');
+    const elapsed = job.finished && job.created
+        ? fmtDur(job.duration ?? (job.finished - job.created))
+        : (job.created ? fmtDur(Date.now() / 1000 - job.created) + ' (en curso)' : '—');
+    const warnsHtml = fails.length
+        ? `<div><p class="text-dracula-red font-semibold mb-1">⚠ Avisos / errores (${fails.length}):</p>
+            <ul class="space-y-2">${fails.map((it) => `<li class="bg-black/30 rounded-xl px-3 py-2"><p class="text-dracula-fg">${esc(it.title)}</p><p class="text-dracula-red/90 text-xs mt-1 break-all">${esc(it.error || 'sin detalle')}</p></li>`).join('')}</ul></div>`
+        : '<p class="text-dracula-green text-xs">Sin avisos ni errores.</p>';
+    detailBody.innerHTML = `
+        <div class="flex items-center gap-2"><span class="font-semibold text-xs border rounded-full px-3 py-0.5 ${BADGE[cls]}">${label}</span>
+        <span class="text-dracula-comment text-xs">${esc(job.id || '')}</span></div>
+        <div><p class="text-dracula-comment text-xs mb-1">Comando ejecutado</p>
+        <code class="block bg-black/40 border border-dracula-purple/20 rounded-xl px-3 py-2 text-xs text-dracula-cyan break-all whitespace-pre-wrap">${esc(job.command || 'yt-dlp (proceso interno)')}</code></div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><p class="text-dracula-comment">Tiempo transcurrido</p><p class="text-dracula-fg font-semibold">${esc(elapsed)}</p></div>
+            <div><p class="text-dracula-comment">Items</p><p class="text-dracula-fg font-semibold">${job.total || items.length}</p></div>
+            <div class="col-span-2"><p class="text-dracula-comment">URL</p><p class="text-dracula-fg break-all">${esc(job.url)}</p></div>
+        </div>
+        ${warnsHtml}`;
+    detailOverlay.classList.remove('hidden');
+    detailOverlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeDetails() {
+    detailOverlay.classList.add('hidden');
+    detailOverlay.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('detailClose').addEventListener('click', closeDetails);
+detailOverlay.addEventListener('click', (e) => {
+    if (e.target === detailOverlay) closeDetails();
+});
 
 async function refreshHistory() {
     try {
@@ -275,6 +323,7 @@ async function refreshHistory() {
         if (!res.ok) return;
         const data = await res.json();
         const hist = data.history || [];
+        lastHistory = hist;
         historyList.innerHTML = hist.length
             ? hist.map((job) => jobCard(job, false)).join('')
             : '<p class="text-dracula-comment text-sm">Sin descargas todavía.</p>';
@@ -287,6 +336,19 @@ historyList.addEventListener('click', async (e) => {
     const btn = e.target.closest('button[data-act]');
     if (!btn) return;
     const { act, id } = btn.dataset;
+    if (act === 'details') {
+        openDetails(id);
+        return;
+    }
+    if (act === 'del') {
+        if (!confirm('¿Borrar este registro del historial?')) return;
+        btn.disabled = true;
+        try {
+            await fetch(`/api/history/${id}`, { method: 'DELETE' });
+        } catch (err) { /* refresh will show it */ }
+        refreshHistory();
+        return;
+    }
     const endpoint = act === 'pause' ? 'pause' : act === 'resume' ? 'resume' : 'cancel';
     btn.disabled = true;
     try {
@@ -313,8 +375,19 @@ function closeHistory() {
 
 historyBtn.addEventListener('click', openHistory);
 historyBack.addEventListener('click', closeHistory);
+document.getElementById('historyClear').addEventListener('click', async () => {
+    if (!confirm('¿Borrar TODO el historial?')) return;
+    try {
+        await fetch('/api/history', { method: 'DELETE' });
+    } catch (err) { /* refresh will show it */ }
+    refreshHistory();
+});
+
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !historyOverlay.classList.contains('hidden')) closeHistory();
+    if (e.key === 'Escape') {
+        if (!detailOverlay.classList.contains('hidden')) closeDetails();
+        else if (!historyOverlay.classList.contains('hidden')) closeHistory();
+    }
 });
 
 orbPause.addEventListener('click', async () => {

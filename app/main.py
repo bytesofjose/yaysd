@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from .downloader import cancel_job, download_audio, jobs_lock, jobs, pause_job, read_history, resume_interrupted, resume_job, start_job
+from .downloader import cancel_job, clear_history, delete_history_record, download_audio, jobs_lock, jobs, pause_job, read_history, resume_interrupted, resume_job, start_job
 import uvicorn
 
 app = FastAPI(title="Guardarol")
@@ -52,6 +52,17 @@ async def history(limit: int = 50):
                 if job.get("status") in ("resolving", "downloading", "paused")]
     past = read_history(limit=min(limit, 200))
     return JSONResponse(content={"history": live + past})
+
+@app.delete("/api/history")
+async def history_clear():
+    clear_history()
+    return JSONResponse(content={"status": "cleared"})
+
+@app.delete("/api/history/{job_id}")
+async def history_delete(job_id: str):
+    if delete_history_record(job_id):
+        return JSONResponse(content={"status": "deleted"})
+    return JSONResponse(status_code=404, content={"status": "error", "message": "Registro no encontrado."})
 
 @app.post("/api/job/{job_id}/pause")
 async def job_pause(job_id: str):

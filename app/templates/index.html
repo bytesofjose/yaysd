@@ -63,9 +63,22 @@
             <div class="flex items-center gap-3 mb-5 sticky top-0 bg-[#14151e]/95 py-3">
                 <button id="historyBack" type="button" title="Volver"
                         class="shrink-0 h-10 px-4 rounded-full bg-dracula-purple text-dracula-bg font-semibold cursor-pointer transition-all hover:bg-dracula-pink">← Volver</button>
-                <h2 class="text-xl font-semibold">Historial de descargas</h2>
+                <h2 class="text-xl font-semibold flex-1">Historial de descargas</h2>
+                <button id="historyClear" type="button" title="Borrar todo el historial"
+                        class="shrink-0 h-10 px-4 rounded-full bg-transparent border border-dracula-red/50 text-dracula-red text-sm font-semibold cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">🗑 Limpiar</button>
             </div>
             <div id="historyList" class="flex flex-col gap-3 text-left pb-10"></div>
+        </div>
+    </div>
+
+    <div id="detailOverlay" class="hidden fixed inset-0 z-[9600] bg-black/60 backdrop-blur-[10px] p-4 flex justify-center items-start overflow-y-auto" aria-hidden="true">
+        <div class="bg-[#282a36] border border-dracula-purple/20 rounded-3xl w-full max-w-[600px] p-6 my-10 shadow-[0_20px_50px_rgba(0,0,0,0.6)]" role="dialog" aria-label="Detalle del job">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Detalle</h3>
+                <button id="detailClose" type="button" title="Cerrar"
+                        class="w-8 h-8 rounded-full border border-dracula-comment/40 text-dracula-comment cursor-pointer transition-all hover:text-dracula-fg hover:border-dracula-fg">✕</button>
+            </div>
+            <div id="detailBody" class="flex flex-col gap-3 text-sm"></div>
         </div>
     </div>
 
