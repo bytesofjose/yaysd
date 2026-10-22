@@ -33,10 +33,14 @@ def norm(s):
 
 def existing_artist(name):
     want = norm(name)
+    if want and want != "na":
+        for d in MUSIC.iterdir():
+            if d.is_dir() and norm(d.name) == want:
+                return d.name
     for d in MUSIC.iterdir():
-        if d.is_dir() and norm(d.name) == want:
+        if d.is_dir() and norm(d.name) == "mik4000":
             return d.name
-    return clean(name) or "Mik4000"
+    return "Mik4000"
 
 
 def channel_map():
@@ -51,9 +55,9 @@ def channel_map():
         if len(parts) < 3 or not parts[1]:
             continue
         vid, title = parts[0], parts[1]
-        url = parts[2] or f"https://www.youtube.com/watch?v={vid}"
-        uploader = parts[3] if len(parts) > 3 else ""
-        thumb = parts[4] if len(parts) > 4 else ""
+        url = parts[2] if len(parts) > 2 and parts[2] not in ("", "NA") else f"https://www.youtube.com/watch?v={vid}"
+        uploader = parts[3] if len(parts) > 3 and parts[3] not in ("", "NA") else ""
+        thumb = parts[4] if len(parts) > 4 and parts[4] not in ("", "NA") else f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg"
         entries[norm(title)] = (title, url, uploader, thumb)
     return entries
 
@@ -143,6 +147,12 @@ def main():
             log(f"FAIL {stem[:60]}: {e}")
             fail += 1
     log(f"== backfill done ok={ok} fail={fail} skip={skip} ==")
+    for d in sorted([p for p in MUSIC.rglob("*") if p.is_dir()], reverse=True):
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+    log("== empty dirs cleaned ==")
 
 
 if __name__ == "__main__":
