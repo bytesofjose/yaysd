@@ -358,7 +358,7 @@ def run_job(job_id, url):
         _finish(job_id, "error", "No se encontraron videos en esa URL.")
         return
     _update(job_id, status="downloading", total=len(entries),
-            command=f'yt-dlp --no-playlist -f "bestaudio/best" -o "/tmp/%(title)s.%(ext)s" "{url}"',
+            command=f'yt-dlp --no-playlist -f "bestaudio/best" -o "/tmp/%(title)s.%(ext)s" --socket-timeout 20 --retries 2 --no-warnings --quiet --extractor-args "youtube:player_client=android,web;skip=dash,hls" "{url}"',
             items=[{"url": e["url"], "title": e["title"], "status": "pending", "error": ""} for e in entries])
     _snapshot(job_id)
     _process(job_id)

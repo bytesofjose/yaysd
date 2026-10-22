@@ -255,8 +255,12 @@ function jobCard(job, open = false) {
             <div class="col-span-2"><span class="text-dracula-comment">IP </span><span class="text-dracula-fg">${esc(job.ip || '—')}</span></div>
             <div><span class="text-dracula-comment">Inicio </span><span class="text-dracula-fg">${fmtTime(job.created)}</span></div>
             <div><span class="text-dracula-comment">Fin </span><span class="text-dracula-fg">${job.finished ? fmtTime(job.finished) : '—'}</span></div>
-            <div class="col-span-2 md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                ${failed ? `<span>✗ <span class="text-dracula-red font-semibold">${failed}</span> <span class="text-dracula-comment">fallaron</span></span>` : ''}
+            <div class="col-span-2 md:col-span-4 flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm">
+                <span>✓ <span class="text-dracula-green font-semibold">${oks + skipped}</span> <span class="text-dracula-comment">descargadas</span></span>
+                <span class="text-dracula-comment">|</span>
+                <button data-act="details" data-id="${job.id}" data-focus="warnings" class="cursor-pointer transition-all hover:opacity-80">⚠ <span class="text-dracula-yellow font-semibold">${skipped}</span> <span class="text-dracula-comment">advertencias</span></button>
+                <span class="text-dracula-comment">|</span>
+                <button data-act="details" data-id="${job.id}" data-focus="errors" class="cursor-pointer transition-all hover:opacity-80">❌ <span class="text-dracula-red font-semibold">${failed}</span> <span class="text-dracula-comment">errores</span></button>
                 <span class="ml-auto flex gap-2">
                     <button data-act="details" data-id="${job.id}" class="px-3 py-1 text-xs rounded-full border border-dracula-cyan/60 text-dracula-cyan cursor-pointer transition-all hover:bg-dracula-cyan hover:text-dracula-bg">🔍 Detalles</button>
                     ${!live ? `<button data-act="del" data-id="${job.id}" title="Borrar registro" class="px-3 py-1 text-xs rounded-full border border-dracula-comment/40 text-dracula-comment cursor-pointer transition-all hover:border-dracula-red hover:text-dracula-red">🗑</button>` : ''}
@@ -278,32 +282,45 @@ function findJob(id) {
     return lastHistory.find((j) => j.id === id);
 }
 
-function openDetails(id) {
+function openDetails(id, focus = '') {
     const job = findJob(id);
     if (!job) return;
     const [cls, label] = jobBadge(job);
     const items = job.items || [];
     const fails = items.filter((it) => it.status === 'fail');
+    const warns = items.filter((it) => it.status === 'skipped');
     const elapsed = job.finished && job.created
         ? fmtDur(job.duration ?? (job.finished - job.created))
         : (job.created ? fmtDur(Date.now() / 1000 - job.created) + ' (en curso)' : '—');
-    const warnsHtml = fails.length
-        ? `<div><p class="text-dracula-red font-semibold mb-1">⚠ Avisos / errores (${fails.length}):</p>
-            <ul class="space-y-2">${fails.map((it) => `<li class="bg-black/30 rounded-xl px-3 py-2"><p class="text-dracula-fg">${esc(it.title)}</p><p class="text-dracula-red/90 text-xs mt-1 break-all">${esc(it.error || 'sin detalle')}</p></li>`).join('')}</ul></div>`
-        : '<p class="text-dracula-green text-xs">Sin avisos ni errores.</p>';
+    const warnsHtml = `<div id="detail-warnings"><p class="text-dracula-yellow font-semibold mb-1">⚠ Advertencias (${warns.length}):</p>
+        ${warns.length
+            ? `<ul class="space-y-2 max-h-48 overflow-y-auto">${warns.map((it) => `<li class="bg-black/30 rounded-xl px-3 py-2"><p class="text-dracula-fg">${esc(it.title)}</p><p class="text-dracula-comment text-xs mt-1">ya estaba en la biblioteca — se omitió</p></li>`).join('')}</ul>`
+            : '<p class="text-dracula-comment text-xs">Sin advertencias.</p>'}</div>`;
+    const errsHtml = `<div id="detail-errors"><p class="text-dracula-red font-semibold mb-1">❌ Errores (${fails.length}):</p>
+        ${fails.length
+            ? `<ul class="space-y-2 max-h-48 overflow-y-auto">${fails.map((it) => `<li class="bg-black/30 rounded-xl px-3 py-2"><p class="text-dracula-fg">${esc(it.title)}</p><p class="text-dracula-red/90 text-xs mt-1 break-all font-mono">${esc(it.error || 'sin detalle')}</p></li>`).join('')}</ul>`
+            : '<p class="text-dracula-green text-xs">Sin errores.</p>'}</div>`;
     detailBody.innerHTML = `
         <div class="flex items-center gap-2"><span class="font-semibold text-xs border rounded-full px-3 py-0.5 ${BADGE[cls]}">${label}</span>
         <span class="text-dracula-comment text-xs">${esc(job.id || '')}</span></div>
         <div><p class="text-dracula-comment text-xs mb-1">Comando ejecutado</p>
-        <code class="block bg-black/40 border border-dracula-purple/20 rounded-xl px-3 py-2 text-xs text-dracula-cyan break-all whitespace-pre-wrap">${esc(job.command || 'yt-dlp (proceso interno)')}</code></div>
+        <code class="block bg-black/40 border border-dracula-purple/20 rounded-xl px-3 py-2 text-xs text-dracula-cyan break-all whitespace-pre-wrap font-mono">${esc(job.command || 'yt-dlp (proceso interno)')}</code></div>
         <div class="grid grid-cols-2 gap-2 text-xs">
             <div><p class="text-dracula-comment">Tiempo transcurrido</p><p class="text-dracula-fg font-semibold">${esc(elapsed)}</p></div>
             <div><p class="text-dracula-comment">Items</p><p class="text-dracula-fg font-semibold">${job.total || items.length}</p></div>
             <div class="col-span-2"><p class="text-dracula-comment">URL</p><p class="text-dracula-fg break-all">${esc(job.url)}</p></div>
         </div>
-        ${warnsHtml}`;
+        ${warnsHtml}
+        ${errsHtml}`;
     detailOverlay.classList.remove('hidden');
     detailOverlay.setAttribute('aria-hidden', 'false');
+    if (focus === 'warnings' || focus === 'errors') {
+        const target = document.getElementById(focus === 'warnings' ? 'detail-warnings' : 'detail-errors');
+        if (target) {
+            target.scrollIntoView({ block: 'start' });
+            target.classList.add('ring-1', 'ring-dracula-purple', 'rounded-xl', 'p-1');
+        }
+    }
 }
 
 function closeDetails() {
@@ -336,7 +353,7 @@ historyList.addEventListener('click', async (e) => {
     if (!btn) return;
     const { act, id } = btn.dataset;
     if (act === 'details') {
-        openDetails(id);
+        openDetails(id, btn.dataset.focus || '');
         return;
     }
     if (act === 'del') {
