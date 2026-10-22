@@ -164,11 +164,15 @@ def _get(job_id):
         return dict(jobs.get(job_id, {}))
 
 
+def _clean(s):
+    return "".join([c for c in (s or "") if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
+
+
 def get_metadata(info):
-    artist = info.get('artist') or info.get('uploader') or "Unknown Artist"
-    album = info.get('album') or info.get('playlist') or "Single EP"
-    artist = "".join([c for c in artist if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
-    album = "".join([c for c in album if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
+    artist = _clean(info.get('artist') or info.get('uploader')) or "Unknown Artist"
+    album = _clean(info.get('album') or info.get('playlist'))
+    if not album:
+        album = _clean(info.get('title'))[:100] or "Single EP"
     return artist or "Unknown Artist", album or "Singles"
 
 
@@ -234,6 +238,45 @@ def _to_m4a(src, dst_tmp):
         raise RuntimeError(f"ffmpeg audio extract failed: {(r.stderr or '').strip()[:200]}")
 
 
+def _pick_thumbnail(info):
+    thumbs = info.get('thumbnails') or []
+    jpgs = [t for t in thumbs if (t.get('url') or '').split('?')[0].lower().endswith(('.jpg', '.jpeg'))]
+    pool = jpgs or thumbs
+    best = None
+    for t in pool:
+        if not t.get('url'):
+            continue
+        size = (t.get('width') or 0) * (t.get('height') or 0)
+        if best is None or size > best[0]:
+            best = (size, t['url'])
+    return best[1] if best else info.get('thumbnail')
+
+
+def _fetch_thumbnail(url, dest):
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=30) as r, open(dest, "wb") as f:
+        f.write(r.read())
+    return dest.is_file() and dest.stat().st_size > 0
+
+
+def _tag_and_cover(audio_in, thumb_path, title, artist, album, dst_tmp):
+    cmd = ["ffmpeg", "-v", "error", "-y", "-i", str(audio_in)]
+    if thumb_path:
+        cmd += ["-i", str(thumb_path), "-map", "0:a:0", "-map", "1:v:0",
+                "-c", "copy", "-c:v:0", "mjpeg",
+                "-disposition:v:0", "attached_pic"]
+    else:
+        cmd += ["-map", "0:a:0", "-c", "copy"]
+    cmd += ["-metadata", f"title={title}",
+            "-metadata", f"artist={artist}",
+            "-metadata", f"album={album}",
+            str(dst_tmp)]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    if r.returncode != 0 or not dst_tmp.is_file():
+        raise RuntimeError(f"ffmpeg tag/cover failed: {(r.stderr or '').strip()[:200]}")
+
+
 def _download_one(entry_url, progress_cb):
     """Returns (path, title, skipped). Audio-only .m4a unless source is a native audio ext."""
     ydl_opts = _base_opts({
@@ -257,19 +300,37 @@ def _download_one(entry_url, progress_cb):
         info = ydl.extract_info(entry_url, download=True)
         temp_file = Path(ydl.prepare_filename(info))
         final_name = _final_name(temp_file.name)
+        title = info.get("title", temp_file.stem)
         artist, album = get_metadata(info)
         dest_dir = settings.BASE_MUSIC_PATH / artist / album
         dest_dir.mkdir(parents=True, exist_ok=True)
         if final_name == temp_file.name:
-            final_path = dest_dir / final_name
-            shutil.move(str(temp_file), str(final_path))
+            audio_src = temp_file
         else:
             tmp_out = temp_file.with_suffix(".m4a")
             _to_m4a(temp_file, tmp_out)
             temp_file.unlink(missing_ok=True)
-            final_path = dest_dir / final_name
-            shutil.move(str(tmp_out), str(final_path))
-        return str(final_path), info.get("title", temp_file.stem), False
+            audio_src = tmp_out
+        thumb_file = None
+        try:
+            turl = _pick_thumbnail(info)
+            if turl:
+                cand = Path(str(audio_src) + ".thumb.jpg")
+                if _fetch_thumbnail(turl, cand):
+                    thumb_file = cand
+        except Exception as e:
+            logger.warning(f"thumbnail unavailable for {entry_url}: {e}")
+        final_tmp = Path("/tmp") / (Path(final_name).stem + ".tagged" + Path(final_name).suffix)
+        _tag_and_cover(audio_src, thumb_file, title, artist, album, final_tmp)
+        if thumb_file:
+            thumb_file.unlink(missing_ok=True)
+        if audio_src != temp_file:
+            audio_src.unlink(missing_ok=True)
+        if temp_file.is_file():
+            temp_file.unlink(missing_ok=True)
+        final_path = dest_dir / final_name
+        shutil.move(str(final_tmp), str(final_path))
+        return str(final_path), title, False
 
 
 def _snapshot(job_id):
