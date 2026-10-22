@@ -38,12 +38,13 @@ jobs = {}
 jobs_lock = threading.Lock()
 
 
-def _new_job(url):
+def _new_job(url, ip=""):
     job_id = uuid.uuid4().hex[:12]
     with jobs_lock:
         jobs[job_id] = {
             "id": job_id,
             "url": url,
+            "ip": ip,
             "status": "resolving",
             "total": 0,
             "done": 0,
@@ -83,6 +84,7 @@ def _save_history(job_id):
         record = {
             "id": job["id"],
             "url": job["url"],
+            "ip": job.get("ip", ""),
             "status": job["status"],
             "total": job.get("total", 0),
             "ok": job.get("total", 0) - job.get("failed", 0) if job.get("status") == "done" else job.get("done", 0),
@@ -212,6 +214,7 @@ def _snapshot(job_id):
         settings.STATE_DIR.mkdir(parents=True, exist_ok=True)
         snap = {
             "url": job.get("url", ""),
+            "ip": job.get("ip", ""),
             "items": [{"url": it.get("url", ""), "title": it.get("title", ""),
                        "status": it.get("status", "pending")} for it in job["items"]],
             "created": job.get("created"),
@@ -241,12 +244,19 @@ def _process(job_id):
         if entry.get("status") != "pending":
             continue
         with jobs_lock:
-            cancelled = jobs.get(job_id, {}).get("cancelled")
+            job_state = jobs.get(job_id, {})
+            cancelled = job_state.get("cancelled")
+            paused = job_state.get("paused")
         if cancelled:
             _finish(job_id, "cancelled", f"Cancelado ({ok + skipped}/{total} en biblioteca.)",
                     done=ok + failed + skipped, failed=failed, skipped=skipped)
             return
-        _update(job_id, current_title=entry.get("title", ""), stage="descargando")
+        if paused:
+            _update(job_id, status="paused", stage="en pausa",
+                    message=f"En pausa ({ok + failed + skipped}/{total}).")
+            _snapshot(job_id)
+            return
+        _update(job_id, status="downloading", current_title=entry.get("title", ""), stage="descargando")
 
         def hook(d, _i=i, _n=total):
             if d.get("status") == "downloading":
@@ -316,48 +326,85 @@ def resume_interrupted():
         return 0
     resumed = 0
     for f in files:
+        if _resume_one_file(f.stem):
+            resumed += 1
+            continue
         try:
             snap = _json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
-        items = snap.get("items", [])
-        pending = sum(1 for it in items if it.get("status") == "pending")
-        if not pending:
+        if not any(it.get("status") == "pending" for it in snap.get("items", [])):
             try:
                 f.unlink()
             except OSError:
                 pass
-            continue
-        job_id = _new_job(snap.get("url", ""))
-        _update(job_id, status="downloading", total=len(items),
-                items=[{"url": it.get("url", ""), "title": it.get("title", ""),
-                        "status": it.get("status", "pending")} for it in items],
-                done=sum(1 for it in items if it.get("status") in ("ok", "skipped")),
-                failed=sum(1 for it in items if it.get("status") == "fail"),
-                skipped=sum(1 for it in items if it.get("status") == "skipped"),
-                message=f"Reanudado tras reinicio ({pending} pendientes).")
-        t = threading.Thread(target=_process, args=(job_id,), daemon=True)
-        t.start()
-        resumed += 1
-        logger.info(f"Resumed job {job_id} with {pending} pending items from {f.name}")
-        try:
-            f.unlink()
-        except OSError:
-            pass
     return resumed
 
 
-def start_job(url):
-    job_id = _new_job(url)
+def start_job(url, ip=""):
+    job_id = _new_job(url, ip)
     t = threading.Thread(target=run_job, args=(job_id, url), daemon=True)
     t.start()
     return job_id
 
 
-def cancel_job(job_id):
+def pause_job(job_id):
     with jobs_lock:
         if job_id in jobs and jobs[job_id]["status"] in ("resolving", "downloading"):
+            jobs[job_id]["paused"] = True
+            return True
+    return False
+
+
+def resume_job(job_id):
+    with jobs_lock:
+        job = jobs.get(job_id)
+        if job and job.get("status") == "paused":
+            job["paused"] = False
+            job["cancelled"] = False
+            job["status"] = "downloading"
+            t = threading.Thread(target=_process, args=(job_id,), daemon=True)
+            t.start()
+            return True
+    if _resume_one_file(job_id):
+        return True
+    return False
+
+
+def _resume_one_file(job_id):
+    f = settings.STATE_DIR / f"{job_id}.json"
+    if not f.is_file():
+        return False
+    try:
+        snap = _json.loads(f.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    items = snap.get("items", [])
+    pending = sum(1 for it in items if it.get("status") == "pending")
+    if not pending:
+        return False
+    new_id = _new_job(snap.get("url", ""), snap.get("ip", ""))
+    _update(new_id, status="downloading", total=len(items),
+            items=[{"url": it.get("url", ""), "title": it.get("title", ""),
+                    "status": it.get("status", "pending")} for it in items],
+            done=sum(1 for it in items if it.get("status") in ("ok", "skipped")),
+            failed=sum(1 for it in items if it.get("status") == "fail"),
+            skipped=sum(1 for it in items if it.get("status") == "skipped"),
+            message=f"Reanudado manualmente ({pending} pendientes).")
+    t = threading.Thread(target=_process, args=(new_id,), daemon=True)
+    t.start()
+    try:
+        f.unlink()
+    except OSError:
+        pass
+    return True
+
+
+def cancel_job(job_id):
+    with jobs_lock:
+        if job_id in jobs and jobs[job_id]["status"] in ("resolving", "downloading", "paused"):
             jobs[job_id]["cancelled"] = True
+            jobs[job_id]["paused"] = False
             return True
     return False
 

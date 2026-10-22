@@ -12,8 +12,8 @@
 <body class="font-outfit bg-dracula-bg text-dracula-fg min-h-screen flex justify-center items-center p-5 bg-fixed"
       style="background-image: radial-gradient(at 0% 0%, rgba(189,147,249,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255,121,198,0.15) 0px, transparent 50%);">
     <button id="historyBtn" type="button" title="Historial de descargas"
-            class="fixed top-4 right-4 z-[9000] bg-[#44475a]/60 backdrop-blur-md border border-dracula-purple/20 rounded-full px-4 py-2 text-sm font-semibold text-dracula-fg cursor-pointer transition-all hover:border-dracula-purple hover:shadow-[0_0_15px_rgba(189,147,249,0.3)]">
-        📋 Historial
+            class="fixed top-4 right-4 z-[9000] bg-[#44475a]/60 backdrop-blur-md border border-dracula-purple/20 rounded-full w-11 h-11 flex items-center justify-center cursor-pointer transition-all hover:border-dracula-purple hover:shadow-[0_0_15px_rgba(189,147,249,0.3)]">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#bd93f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 3"/></svg>
     </button>
     <div class="bg-[#44475a]/40 backdrop-blur-xl border border-dracula-purple/20 rounded-3xl p-8 md:p-12 w-[90%] max-w-[600px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
         <h1 class="text-4xl md:text-[2.5rem] font-semibold mb-6 drop-shadow-[0_0_10px_rgba(189,147,249,0.3)]">
@@ -51,18 +51,21 @@
             <div class="w-full h-2.5 rounded-full bg-black/40 border border-dracula-purple/20 overflow-hidden"><div id="orbBarFill" class="orb-bar-fill h-full w-0 rounded-full bg-gradient-to-r from-dracula-purple to-dracula-pink shadow-[0_0_12px_rgba(255,121,198,0.6)]"></div></div>
             <p id="orbTitle" class="text-sm max-w-full overflow-hidden text-ellipsis line-clamp-2 min-h-[2.4em]">Resolviendo URL…</p>
             <p id="orbStage" class="text-xs text-dracula-comment min-h-[1.2em]"></p>
-            <button id="orbCancel" type="button" class="mt-2 bg-transparent border border-dracula-red text-dracula-red rounded-full px-6 py-2.5 font-semibold cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">Cancelar</button>
+            <div class="mt-2 flex gap-2">
+                <button id="orbPause" type="button" class="bg-transparent border border-dracula-yellow text-dracula-yellow rounded-full px-6 py-2.5 font-semibold cursor-pointer transition-all hover:bg-dracula-yellow hover:text-dracula-bg">Pausar</button>
+                <button id="orbCancel" type="button" class="bg-transparent border border-dracula-red text-dracula-red rounded-full px-6 py-2.5 font-semibold cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">Cancelar</button>
+            </div>
         </div>
     </div>
 
-    <div id="historyOverlay" class="hidden fixed inset-0 z-[9500] bg-[#14151e]/60 backdrop-blur-[10px] p-4 md:p-8 flex justify-center items-start overflow-y-auto" aria-hidden="true">
-        <div class="bg-[#282a36]/95 border border-dracula-purple/20 rounded-3xl w-full max-w-[640px] p-6 md:p-8 my-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" role="dialog" aria-label="Historial de descargas">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold">📋 Historial</h2>
-                <button id="historyClose" type="button" title="Cerrar"
-                        class="w-8 h-8 rounded-full border border-dracula-comment/40 text-dracula-comment cursor-pointer transition-all hover:text-dracula-fg hover:border-dracula-fg">✕</button>
+    <div id="historyOverlay" class="hidden fixed inset-0 z-[9500] bg-[#14151e]/95 backdrop-blur-[10px] overflow-y-auto" aria-hidden="true">
+        <div class="w-full max-w-[720px] mx-auto px-4 md:px-8 py-6 min-h-full" role="dialog" aria-label="Historial de descargas">
+            <div class="flex items-center gap-3 mb-5 sticky top-0 bg-[#14151e]/95 py-3">
+                <button id="historyBack" type="button" title="Volver"
+                        class="shrink-0 h-10 px-4 rounded-full bg-dracula-purple text-dracula-bg font-semibold cursor-pointer transition-all hover:bg-dracula-pink">← Volver</button>
+                <h2 class="text-xl font-semibold">Historial de descargas</h2>
             </div>
-            <div id="historyList" class="flex flex-col gap-3 text-left"></div>
+            <div id="historyList" class="flex flex-col gap-3 text-left pb-10"></div>
         </div>
     </div>
 

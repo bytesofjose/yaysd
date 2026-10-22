@@ -78,9 +78,11 @@ function renderJob(job) {
         descargando: '⬇ Descargando audio original',
         'guardando en biblioteca': '⚙ Guardando en tu biblioteca…',
         resolviendo: '🔍 Resolviendo URL…',
+        'en pausa': '⏸ En pausa — reanuda desde Historial o aquí',
         listo: '✅ Listo'
     };
     orbStage.textContent = stageMap[job.stage] || job.stage || '';
+    if (orbPause) orbPause.textContent = job.status === 'paused' ? 'Reanudar' : 'Pausar';
 }
 
 let toastTimer = null;
@@ -167,16 +169,18 @@ orbCancel.addEventListener('click', async () => {
 
 const historyBtn = document.getElementById('historyBtn');
 const historyOverlay = document.getElementById('historyOverlay');
-const historyClose = document.getElementById('historyClose');
+const historyBack = document.getElementById('historyBack');
 const historyList = document.getElementById('historyList');
+const orbPause = document.getElementById('orbPause');
 
-const STATUS_STYLE = {
-    done: 'border-dracula-green/40 text-dracula-green',
+const BADGE = {
+    running: 'border-dracula-cyan/40 text-dracula-cyan',
+    paused: 'border-dracula-yellow/40 text-dracula-yellow',
+    ok: 'border-dracula-green/40 text-dracula-green',
+    warning: 'border-dracula-yellow/40 text-dracula-yellow',
     error: 'border-dracula-red/40 text-dracula-red',
-    cancelled: 'border-dracula-yellow/40 text-dracula-yellow',
+    cancelled: 'border-dracula-comment/40 text-dracula-comment',
 };
-
-const STATUS_LABEL = { done: '✅ listo', error: '❌ error', cancelled: '⏸ cancelado' };
 
 function esc(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -187,24 +191,56 @@ function fmtTime(ts) {
     return new Date(ts * 1000).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function jobBadge(job) {
+    if (job.status === 'resolving' || job.status === 'downloading') return ['running', '● En curso'];
+    if (job.status === 'paused') return ['paused', '⏸ En pausa'];
+    if (job.status === 'done') return job.failed > 0 ? ['warning', '⚠ Terminó con avisos'] : ['ok', '✅ OK'];
+    if (job.status === 'error') return ['error', '❌ Error'];
+    return ['cancelled', '⏹ Cancelado'];
+}
+
 function jobCard(job, open = false) {
-    const fails = (job.items || []).filter((it) => it.status === 'fail');
+    const [cls, label] = jobBadge(job);
+    const live = job.status === 'resolving' || job.status === 'downloading' || job.status === 'paused';
+    const items = job.items || [];
+    const oks = items.filter((it) => it.status === 'ok').length;
+    const skipped = items.filter((it) => it.status === 'skipped').length;
+    const failed = job.failed || items.filter((it) => it.status === 'fail').length;
+    const fails = items.filter((it) => it.status === 'fail');
     const failsHtml = fails.length
         ? `<div class="mt-2 text-xs"><p class="text-dracula-red font-semibold mb-1">Fallaron (${fails.length}):</p><ul class="list-disc ml-5 space-y-0.5 text-dracula-fg/90">${fails.map((it) => `<li>${esc(it.title)}</li>`).join('')}</ul></div>`
         : '';
-    const oks = (job.items || []).filter((it) => it.status === 'ok').length;
-    const skipped = (job.items || []).filter((it) => it.status === 'skipped').length;
-    const skipNote = skipped ? ` (${skipped} ya estaban)` : '';
-    return `<details ${open ? 'open' : ''} class="bg-black/20 border rounded-2xl px-4 py-3 ${STATUS_STYLE[job.status] || 'border-dracula-comment/30'}">
-        <summary class="cursor-pointer flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span class="font-semibold">${STATUS_LABEL[job.status] || esc(job.status)}</span>
-            <span class="text-dracula-fg text-sm">${job.total > 1 ? `${oks + skipped}/${job.total} rolas${skipNote}` : esc(job.message || '')}</span>
-            <span class="text-dracula-comment text-xs ml-auto">${fmtTime(job.finished || job.created)}</span>
-        </summary>
-        <p class="mt-2 text-xs text-dracula-comment break-all">${esc(job.url)}</p>
+    const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
+    const progressHtml = live
+        ? `<div class="mt-2 w-full h-2 rounded-full bg-black/40 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-dracula-purple to-dracula-pink" style="width:${pct}%"></div></div>`
+        : '';
+    const controlsHtml = live
+        ? `<div class="mt-3 flex gap-2">
+               ${job.status === 'paused'
+                   ? `<button data-act="resume" data-id="${job.id}" class="px-4 py-1.5 text-sm rounded-full border border-dracula-green text-dracula-green cursor-pointer transition-all hover:bg-dracula-green hover:text-dracula-bg">▶ Reanudar</button>`
+                   : `<button data-act="pause" data-id="${job.id}" class="px-4 py-1.5 text-sm rounded-full border border-dracula-yellow text-dracula-yellow cursor-pointer transition-all hover:bg-dracula-yellow hover:text-dracula-bg">⏸ Pausar</button>`}
+               <button data-act="cancel" data-id="${job.id}" class="px-4 py-1.5 text-sm rounded-full border border-dracula-red text-dracula-red cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">⏹ Detener</button>
+           </div>`
+        : '';
+    return `<div class="bg-black/20 border rounded-2xl px-4 py-3 ${BADGE[cls]}">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span class="font-semibold text-sm border rounded-full px-3 py-0.5 ${BADGE[cls]}">${label}</span>
+            <span class="text-dracula-fg text-sm font-semibold">${job.total > 1 ? `${oks + skipped}/${job.total} rolas` : esc(job.current_title || job.message || '')}</span>
+        </div>
+        <p class="mt-2 text-xs text-dracula-fg/80 break-all">${esc(job.url)}</p>
+        <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div><span class="text-dracula-comment">IP </span><span class="text-dracula-fg">${esc(job.ip || '—')}</span></div>
+            <div><span class="text-dracula-comment">Inicio </span><span class="text-dracula-fg">${fmtTime(job.created)}</span></div>
+            <div><span class="text-dracula-comment">Fin </span><span class="text-dracula-fg">${job.finished ? fmtTime(job.finished) : '—'}</span></div>
+            <div><span class="text-dracula-comment">OK/hay/fallo </span><span class="text-dracula-fg">${oks}/${skipped}/${failed}</span></div>
+        </div>
+        ${progressHtml}
         ${failsHtml}
-    </details>`;
+        ${controlsHtml}
+    </div>`;
 }
+
+let historyTimer = null;
 
 async function refreshHistory() {
     try {
@@ -213,30 +249,56 @@ async function refreshHistory() {
         const data = await res.json();
         const hist = data.history || [];
         historyList.innerHTML = hist.length
-            ? hist.map((job, i) => jobCard(job, i === 0)).join('')
+            ? hist.map((job) => jobCard(job, false)).join('')
             : '<p class="text-dracula-comment text-sm">Sin descargas todavía.</p>';
     } catch (err) {
         historyList.innerHTML = '<p class="text-dracula-red text-sm">No se pudo cargar el historial.</p>';
     }
 }
 
-historyBtn.addEventListener('click', () => {
-    historyOverlay.classList.remove('hidden');
-    historyOverlay.setAttribute('aria-hidden', 'false');
+historyList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const { act, id } = btn.dataset;
+    const endpoint = act === 'pause' ? 'pause' : act === 'resume' ? 'resume' : 'cancel';
+    btn.disabled = true;
+    try {
+        await fetch(`/api/job/${id}/${endpoint}`, { method: 'POST' });
+    } catch (err) { /* refresh will show it */ }
     refreshHistory();
 });
+
+function openHistory() {
+    historyOverlay.classList.remove('hidden');
+    historyOverlay.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('overflow-hidden');
+    refreshHistory();
+    if (!historyTimer) historyTimer = setInterval(refreshHistory, 2000);
+}
 
 function closeHistory() {
     historyOverlay.classList.add('hidden');
     historyOverlay.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('overflow-hidden');
+    clearInterval(historyTimer);
+    historyTimer = null;
 }
 
-historyClose.addEventListener('click', closeHistory);
-historyOverlay.addEventListener('click', (e) => {
-    if (e.target === historyOverlay) closeHistory();
-});
+historyBtn.addEventListener('click', openHistory);
+historyBack.addEventListener('click', closeHistory);
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !historyOverlay.classList.contains('hidden')) closeHistory();
+});
+
+orbPause.addEventListener('click', async () => {
+    if (!activeJob) return;
+    orbPause.disabled = true;
+    try {
+        const res = await fetch(`/api/job/${activeJob}`, { cache: 'no-store' }).then((r) => r.json());
+        const endpoint = res.status === 'paused' ? 'resume' : 'pause';
+        await fetch(`/api/job/${activeJob}/${endpoint}`, { method: 'POST' });
+    } catch (err) { /* poll loop will show it */ }
+    orbPause.disabled = false;
 });
 
 async function reattach() {
