@@ -69,7 +69,7 @@ function renderJob(job) {
     orbPercent.textContent = `${Math.round(pct)}%`;
     orbBarFill.style.width = `${pct}%`;
     if (job.total > 0) {
-        orbCount.textContent = `${job.done}/${job.total} rolas`;
+        orbCount.textContent = `${job.done}/${job.total} rolas${etaText(job)}`;
     } else {
         orbCount.textContent = 'Leyendo links…';
     }
@@ -191,6 +191,25 @@ function fmtTime(ts) {
     return new Date(ts * 1000).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function fmtDur(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    if (sec < 60) return `${sec} s`;
+    const m = Math.floor(sec / 60);
+    if (m < 60) return `${m} min`;
+    return `${Math.floor(m / 60)} h ${m % 60} min`;
+}
+
+function etaText(job) {
+    if (job.status !== 'downloading' && job.status !== 'resolving') return '';
+    const total = job.total || 0;
+    const done = job.done || 0;
+    if (total <= 0 || done <= 0 || !job.dl_started) return '';
+    const elapsed = Date.now() / 1000 - job.dl_started;
+    if (elapsed <= 0) return '';
+    const eta = (elapsed / done) * (total - done);
+    return ` · ~${fmtDur(eta)} restantes`;
+}
+
 function jobBadge(job) {
     if (job.status === 'resolving' || job.status === 'downloading') return ['running', '● En curso'];
     if (job.status === 'paused') return ['paused', '⏸ En pausa'];
@@ -211,9 +230,13 @@ function jobCard(job, open = false) {
         ? `<div class="mt-2 text-xs"><p class="text-dracula-red font-semibold mb-1">Fallaron (${fails.length}):</p><ul class="list-disc ml-5 space-y-0.5 text-dracula-fg/90">${fails.map((it) => `<li>${esc(it.title)}</li>`).join('')}</ul></div>`
         : '';
     const pct = Math.max(0, Math.min(100, Number(job.percent) || 0));
+    const headLine = live
+        ? `${pct}%${etaText(job)}`
+        : (job.finished && job.created ? `Tardó ${fmtDur(job.duration ?? (job.finished - job.created))}` : '');
     const progressHtml = live
-        ? `<div class="mt-2 w-full h-2 rounded-full bg-black/40 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-dracula-purple to-dracula-pink" style="width:${pct}%"></div></div>`
-        : '';
+        ? `<div class="mt-2 flex items-center gap-2"><div class="flex-1 h-2 rounded-full bg-black/40 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-dracula-purple to-dracula-pink" style="width:${pct}%"></div></div><span class="text-xs text-dracula-cyan font-semibold whitespace-nowrap">${pct}%</span></div>
+           <p class="mt-1 text-xs text-dracula-comment">${esc(headLine)}</p>`
+        : (headLine ? `<p class="mt-2 text-xs text-dracula-comment">${esc(headLine)}</p>` : '');
     const controlsHtml = live
         ? `<div class="mt-3 flex gap-2">
                ${job.status === 'paused'
@@ -229,10 +252,14 @@ function jobCard(job, open = false) {
         </div>
         <p class="mt-2 text-xs text-dracula-fg/80 break-all">${esc(job.url)}</p>
         <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-            <div><span class="text-dracula-comment">IP </span><span class="text-dracula-fg">${esc(job.ip || '—')}</span></div>
+            <div class="col-span-2"><span class="text-dracula-comment">IP </span><span class="text-dracula-fg">${esc(job.ip || '—')}</span></div>
             <div><span class="text-dracula-comment">Inicio </span><span class="text-dracula-fg">${fmtTime(job.created)}</span></div>
             <div><span class="text-dracula-comment">Fin </span><span class="text-dracula-fg">${job.finished ? fmtTime(job.finished) : '—'}</span></div>
-            <div><span class="text-dracula-comment">OK/hay/fallo </span><span class="text-dracula-fg">${oks}/${skipped}/${failed}</span></div>
+            <div class="col-span-2 md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                <span>✓ <span class="text-dracula-green font-semibold">${oks}</span> <span class="text-dracula-comment">descargadas</span></span>
+                <span>⏭ <span class="text-dracula-cyan font-semibold">${skipped}</span> <span class="text-dracula-comment">ya estaban</span></span>
+                ${failed ? `<span>✗ <span class="text-dracula-red font-semibold">${failed}</span> <span class="text-dracula-comment">fallaron</span></span>` : ''}
+            </div>
         </div>
         ${progressHtml}
         ${failsHtml}

@@ -57,6 +57,7 @@ def _new_job(url, ip=""):
             "created": time.time(),
             "finished": None,
             "skipped": 0,
+            "dl_started": None,
         }
     return job_id
 
@@ -90,6 +91,7 @@ def _save_history(job_id):
             "ok": job.get("total", 0) - job.get("failed", 0) if job.get("status") == "done" else job.get("done", 0),
             "failed": job.get("failed", 0),
             "skipped": job.get("skipped", 0),
+            "duration": round((job.get("finished") or time.time()) - (job.get("created") or time.time())),
             "message": job.get("message", ""),
             "created": job.get("created"),
             "finished": job.get("finished"),
@@ -124,7 +126,7 @@ def _get(job_id):
 
 def get_metadata(info):
     artist = info.get('artist') or info.get('uploader') or "Unknown Artist"
-    album = info.get('album') or "Singles"
+    album = info.get('album') or info.get('playlist') or "Single EP"
     artist = "".join([c for c in artist if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
     album = "".join([c for c in album if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
     return artist or "Unknown Artist", album or "Singles"
@@ -237,6 +239,8 @@ def _process(job_id):
         job = jobs.get(job_id, {})
         items = [dict(it) for it in job.get("items", [])]
         total = len(items)
+        if not job.get("dl_started"):
+            jobs[job_id]["dl_started"] = time.time()
     ok = sum(1 for it in items if it.get("status") == "ok")
     failed = sum(1 for it in items if it.get("status") == "fail")
     skipped = sum(1 for it in items if it.get("status") == "skipped")
