@@ -2,10 +2,16 @@ from fastapi import FastAPI, Form, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from .downloader import cancel_job, download_audio, jobs_lock, jobs, read_history, start_job
+from .downloader import cancel_job, download_audio, jobs_lock, jobs, read_history, resume_interrupted, start_job
 import uvicorn
 
 app = FastAPI(title="Guardarol")
+
+@app.on_event("startup")
+async def _resume():
+    n = resume_interrupted()
+    if n:
+        print(f"Guardarol: resumed {n} interrupted job(s)")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")

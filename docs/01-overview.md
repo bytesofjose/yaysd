@@ -42,7 +42,7 @@ npx tailwindcss -c ./tailwind.config.js -i ./app/static/input.css -o ./app/stati
 
 ## Deploy
 
-Push to `main` → Forgejo pipeline (`joe/guarda-rolas`) syncs code to the
+Push to `main` → Forgejo pipeline (`joe/guardarol`) syncs code to the
 homelab service dir, rebuilds and healthchecks. Container name
 `youtube_mp3_downloader` is kept stable: `song-recommender` reaches it at
 `http://youtube_mp3_downloader:8000`.

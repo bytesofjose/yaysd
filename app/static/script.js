@@ -193,10 +193,12 @@ function jobCard(job, open = false) {
         ? `<div class="mt-2 text-xs"><p class="text-dracula-red font-semibold mb-1">Fallaron (${fails.length}):</p><ul class="list-disc ml-5 space-y-0.5 text-dracula-fg/90">${fails.map((it) => `<li>${esc(it.title)}</li>`).join('')}</ul></div>`
         : '';
     const oks = (job.items || []).filter((it) => it.status === 'ok').length;
+    const skipped = (job.items || []).filter((it) => it.status === 'skipped').length;
+    const skipNote = skipped ? ` (${skipped} ya estaban)` : '';
     return `<details ${open ? 'open' : ''} class="bg-black/20 border rounded-2xl px-4 py-3 ${STATUS_STYLE[job.status] || 'border-dracula-comment/30'}">
         <summary class="cursor-pointer flex flex-wrap items-center gap-x-3 gap-y-1">
             <span class="font-semibold">${STATUS_LABEL[job.status] || esc(job.status)}</span>
-            <span class="text-dracula-fg text-sm">${job.total > 1 ? `${oks}/${job.total} rolas` : esc(job.message || '')}</span>
+            <span class="text-dracula-fg text-sm">${job.total > 1 ? `${oks + skipped}/${job.total} rolas${skipNote}` : esc(job.message || '')}</span>
             <span class="text-dracula-comment text-xs ml-auto">${fmtTime(job.finished || job.created)}</span>
         </summary>
         <p class="mt-2 text-xs text-dracula-comment break-all">${esc(job.url)}</p>
