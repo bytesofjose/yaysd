@@ -138,16 +138,30 @@ button:hover {
 }
 
 #feedbackContainer {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    border-radius: 16px;
-    background: rgba(0, 0, 0, 0.2);
-    min-height: 60px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.5s ease;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 10000;
+    margin: 0;
+    padding: 1rem 1.6rem;
+    border-radius: 50px;
+    background: rgba(40, 42, 54, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-width: min(90vw, 480px);
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: block;
+    min-height: 0;
+}
+
+#feedbackContainer:not(.hidden) {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 .hidden {
@@ -226,21 +240,14 @@ button:hover {
     }
 
     #feedbackContainer {
-        width: 100%;
-        padding: 1rem;
+        width: auto;
+        max-width: 92vw;
+        padding: 0.9rem 1.3rem;
     }
 }
 
 body.locked {
     overflow: hidden;
-}
-
-.hint {
-    font-weight: 300;
-    color: var(--comment);
-    font-size: 0.85rem;
-    margin: 1.2rem 0 0.4rem;
-    line-height: 1.5;
 }
 
 #orbOverlay {

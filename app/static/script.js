@@ -52,10 +52,14 @@ function renderJob(job) {
     orbStage.textContent = stageMap[job.stage] || job.stage || '';
 }
 
+let toastTimer = null;
+
 function showFeedback(ok, msg) {
+    clearTimeout(toastTimer);
     feedbackContainer.classList.remove('hidden', 'success', 'error');
     feedbackContainer.classList.add(ok ? 'success' : 'error');
     feedbackText.textContent = msg;
+    toastTimer = setTimeout(() => feedbackContainer.classList.add('hidden'), 6000);
 }
 
 async function pollJob(jobId) {
@@ -89,6 +93,7 @@ form.addEventListener('submit', async (e) => {
     const url = urlInput.value.trim();
     if (!url || activeJob) return;
 
+    clearTimeout(toastTimer);
     feedbackContainer.classList.add('hidden');
     downloadBtn.disabled = true;
     showOverlay();
