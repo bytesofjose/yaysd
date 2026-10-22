@@ -1,5 +1,6 @@
 import logging
 import shutil
+import subprocess
 import threading
 import time
 import uuid
@@ -13,6 +14,7 @@ from .config import settings
 
 MAX_ITEMS = 100
 HISTORY_LIMIT = 200
+NATIVE_AUDIO_EXTS = {"mp3", "m4a", "opus", "ogg", "oga", "flac", "wma", "wav", "aiff"}
 
 
 def setup_logging():
@@ -216,8 +218,24 @@ def resolve_entries(url, limit=MAX_ITEMS):
     return out
 
 
+def _final_name(temp_name):
+    ext = Path(temp_name).suffix.lower().lstrip(".")
+    if ext in NATIVE_AUDIO_EXTS:
+        return temp_name
+    return Path(temp_name).stem + ".m4a"
+
+
+def _to_m4a(src, dst_tmp):
+    r = subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(src),
+         "-map", "0:a:0", "-c", "copy", str(dst_tmp)],
+        capture_output=True, text=True, timeout=300)
+    if r.returncode != 0 or not dst_tmp.is_file():
+        raise RuntimeError(f"ffmpeg audio extract failed: {(r.stderr or '').strip()[:200]}")
+
+
 def _download_one(entry_url, progress_cb):
-    """Returns (path, title, skipped). Skips when the file already exists."""
+    """Returns (path, title, skipped). Audio-only .m4a unless source is a native audio ext."""
     ydl_opts = _base_opts({
         'format': 'bestaudio/best',
         'outtmpl': '/tmp/%(title)s.%(ext)s',
@@ -231,17 +249,26 @@ def _download_one(entry_url, progress_cb):
         temp_name = Path(ydl.prepare_filename(meta)).name
         artist, album = get_metadata(meta)
         dest_dir = settings.BASE_MUSIC_PATH / artist / album
-        existing = dest_dir / temp_name
-        if existing.is_file():
+        final_name = _final_name(temp_name)
+        if (dest_dir / final_name).is_file():
+            existing = dest_dir / final_name
             logger.info(f"SKIP exists: {existing}")
-            return str(existing), meta.get("title", temp_name), True
+            return str(existing), meta.get("title", Path(temp_name).stem), True
         info = ydl.extract_info(entry_url, download=True)
         temp_file = Path(ydl.prepare_filename(info))
+        final_name = _final_name(temp_file.name)
         artist, album = get_metadata(info)
         dest_dir = settings.BASE_MUSIC_PATH / artist / album
         dest_dir.mkdir(parents=True, exist_ok=True)
-        final_path = dest_dir / temp_file.name
-        shutil.move(str(temp_file), str(final_path))
+        if final_name == temp_file.name:
+            final_path = dest_dir / final_name
+            shutil.move(str(temp_file), str(final_path))
+        else:
+            tmp_out = temp_file.with_suffix(".m4a")
+            _to_m4a(temp_file, tmp_out)
+            temp_file.unlink(missing_ok=True)
+            final_path = dest_dir / final_name
+            shutil.move(str(tmp_out), str(final_path))
         return str(final_path), info.get("title", temp_file.stem), False
 
 
