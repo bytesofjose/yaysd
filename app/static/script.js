@@ -256,7 +256,6 @@ function jobCard(job, open = false) {
             <div><span class="text-dracula-comment">Inicio </span><span class="text-dracula-fg">${fmtTime(job.created)}</span></div>
             <div><span class="text-dracula-comment">Fin </span><span class="text-dracula-fg">${job.finished ? fmtTime(job.finished) : '—'}</span></div>
             <div class="col-span-2 md:col-span-4 flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                <span>✓ <span class="text-dracula-green font-semibold">${oks + skipped}</span> <span class="text-dracula-comment">descargadas</span></span>
                 ${failed ? `<span>✗ <span class="text-dracula-red font-semibold">${failed}</span> <span class="text-dracula-comment">fallaron</span></span>` : ''}
                 <span class="ml-auto flex gap-2">
                     <button data-act="details" data-id="${job.id}" class="px-3 py-1 text-xs rounded-full border border-dracula-cyan/60 text-dracula-cyan cursor-pointer transition-all hover:bg-dracula-cyan hover:text-dracula-bg">🔍 Detalles</button>
