@@ -284,6 +284,7 @@ def _process(job_id):
     ok = sum(1 for it in items if it.get("status") == "ok")
     failed = sum(1 for it in items if it.get("status") == "fail")
     skipped = sum(1 for it in items if it.get("status") == "skipped")
+    _snapshot(job_id)
     for i, entry in enumerate(items):
         if entry.get("status") != "pending":
             continue
@@ -443,12 +444,16 @@ def _resume_one_file(job_id, reason="Reanudado manualmente"):
             failed=sum(1 for it in items if it.get("status") == "fail"),
             skipped=sum(1 for it in items if it.get("status") == "skipped"),
             message=f"{reason} ({pending} pendientes).")
+    try:
+        f.rename(settings.STATE_DIR / f"{new_id}.json")
+    except OSError:
+        try:
+            f.unlink()
+        except OSError:
+            pass
+        _snapshot(new_id)
     t = threading.Thread(target=_process, args=(new_id,), daemon=True)
     t.start()
-    try:
-        f.unlink()
-    except OSError:
-        pass
     return True
 
 
