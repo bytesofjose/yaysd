@@ -101,8 +101,8 @@ def _save_history(job_id):
             "created": job.get("created"),
             "finished": job.get("finished"),
             "items": [{"title": it.get("title", ""), "status": it.get("status", ""),
-                       "error": it.get("error", ""), "path": it.get("path", "")}
-                      for it in job.get("items", [])],
+                       "error": it.get("error", ""), "path": it.get("path", ""),
+                       "url": it.get("url", "")} for it in job.get("items", [])],
         }
         settings.HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(settings.HISTORY_FILE, "a", encoding="utf-8") as f:
