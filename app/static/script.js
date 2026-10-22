@@ -17,8 +17,39 @@ const RING_C = 2 * Math.PI * 52;
 orbProgress.style.strokeDasharray = String(RING_C);
 orbProgress.style.strokeDashoffset = String(RING_C);
 
-let pollTimer = null;
+const LAST_URL_KEY = 'guardarol:lastUrl';
+const ACTIVE_JOB_KEY = 'guardarol:activeJob';
+
 let activeJob = null;
+let pollTimer = null;
+
+urlInput.value = localStorage.getItem(LAST_URL_KEY) || '';
+urlInput.addEventListener('input', () => {
+    const v = urlInput.value.trim();
+    if (v) localStorage.setItem(LAST_URL_KEY, urlInput.value);
+    else localStorage.removeItem(LAST_URL_KEY);
+});
+
+function clearUrl() {
+    urlInput.value = '';
+    try { localStorage.removeItem(LAST_URL_KEY); } catch (err) { /* ignore */ }
+}
+
+function clearActiveJob() {
+    activeJob = null;
+    try { localStorage.removeItem(ACTIVE_JOB_KEY); } catch (err) { /* ignore */ }
+}
+
+function saveActiveJob() {
+    try {
+        if (activeJob) localStorage.setItem(ACTIVE_JOB_KEY, JSON.stringify(activeJob));
+    } catch (err) { /* ignore */ }
+}
+
+function stopPolling() {
+    clearInterval(pollTimer);
+    pollTimer = null;
+}
 
 function showOverlay() {
     overlay.classList.remove('hidden');
@@ -76,21 +107,18 @@ async function pollJob(jobId) {
         const job = await res.json();
         renderJob(job);
         if (job.status === 'done' || job.status === 'error' || job.status === 'cancelled') {
-            clearInterval(pollTimer);
-            pollTimer = null;
-            activeJob = null;
+            stopPolling();
+            clearActiveJob();
             hideOverlay();
             downloadBtn.disabled = false;
             const ok = job.status === 'done';
             const failNote = job.failed > 0 ? ` (⚠ ${job.failed} fallaron — ver Historial)` : '';
             showFeedback(ok, (job.message || job.status) + failNote, true);
             refreshHistory();
-            if (ok) urlInput.value = '';
+            if (ok) clearUrl();
         }
     } catch (err) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-        activeJob = null;
+        stopPolling();
         hideOverlay();
         downloadBtn.disabled = false;
         showFeedback(false, 'Se perdió la conexión con el servidor.');
@@ -115,6 +143,8 @@ form.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!data.job_id) throw new Error(data.message || 'sin job');
         activeJob = data.job_id;
+        saveActiveJob();
+        stopPolling();
         pollTimer = setInterval(() => pollJob(activeJob), 1000);
         pollJob(activeJob);
     } catch (err) {
@@ -206,3 +236,37 @@ historyOverlay.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !historyOverlay.classList.contains('hidden')) closeHistory();
 });
+
+async function reattach() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(ACTIVE_JOB_KEY) || 'null'); } catch (err) { /* ignore */ }
+    if (!saved) return;
+    try {
+        const res = await fetch(`/api/job/${saved}`);
+        if (!res.ok) throw new Error('job perdido');
+        const job = await res.json();
+        if (job.status === 'resolving' || job.status === 'downloading') {
+            activeJob = saved;
+            if (job.url) {
+                urlInput.value = job.url;
+                try { localStorage.setItem(LAST_URL_KEY, job.url); } catch (err) { /* ignore */ }
+            }
+            downloadBtn.disabled = true;
+            showOverlay();
+            renderJob(job);
+            stopPolling();
+            pollTimer = setInterval(() => pollJob(activeJob), 1000);
+        } else {
+            clearActiveJob();
+            renderJob(job);
+            const ok = job.status === 'done';
+            showFeedback(ok, job.message || job.status, true);
+            refreshHistory();
+            if (ok) clearUrl();
+        }
+    } catch (err) {
+        clearActiveJob();
+    }
+}
+
+reattach();
