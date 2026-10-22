@@ -326,7 +326,7 @@ def resume_interrupted():
         return 0
     resumed = 0
     for f in files:
-        if _resume_one_file(f.stem):
+        if _resume_one_file(f.stem, "Reanudado tras reinicio"):
             resumed += 1
             continue
         try:
@@ -371,7 +371,7 @@ def resume_job(job_id):
     return False
 
 
-def _resume_one_file(job_id):
+def _resume_one_file(job_id, reason="Reanudado manualmente"):
     f = settings.STATE_DIR / f"{job_id}.json"
     if not f.is_file():
         return False
@@ -390,7 +390,7 @@ def _resume_one_file(job_id):
             done=sum(1 for it in items if it.get("status") in ("ok", "skipped")),
             failed=sum(1 for it in items if it.get("status") == "fail"),
             skipped=sum(1 for it in items if it.get("status") == "skipped"),
-            message=f"Reanudado manualmente ({pending} pendientes).")
+            message=f"{reason} ({pending} pendientes).")
     t = threading.Thread(target=_process, args=(new_id,), daemon=True)
     t.start()
     try:
