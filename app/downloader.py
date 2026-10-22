@@ -125,21 +125,11 @@ def _download_one(entry_url, progress_cb):
         'format': 'bestaudio/best',
         'outtmpl': '/tmp/%(title)s.%(ext)s',
         'noplaylist': True,
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '0',
-        }, {
-            'key': 'EmbedThumbnail',
-        }, {
-            'key': 'FFmpegMetadata',
-        }],
-        'writethumbnail': True,
         'progress_hooks': [progress_cb],
     })
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(entry_url, download=True)
-        temp_file = Path(ydl.prepare_filename(info)).with_suffix('.mp3')
+        temp_file = Path(ydl.prepare_filename(info))
         artist, album = get_metadata(info)
         dest_dir = settings.BASE_MUSIC_PATH / artist / album
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -177,7 +167,7 @@ def run_job(job_id, url):
                 _update(job_id, percent=round(((_i + min(frac, 1)) / _n) * 100, 1),
                         stage="descargando")
             elif d.get("status") == "finished":
-                _update(job_id, stage="convirtiendo a mp3")
+                _update(job_id, stage="guardando en biblioteca")
 
         try:
             path, title = _download_one(entry["url"], hook)

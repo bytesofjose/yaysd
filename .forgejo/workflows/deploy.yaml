@@ -1,4 +1,4 @@
-name: guarda-rolas
+name: guardarol
 on:
   push:
     branches: [main]

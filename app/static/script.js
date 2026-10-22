@@ -23,13 +23,13 @@ let activeJob = null;
 function showOverlay() {
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('locked');
+    document.body.classList.add('overflow-hidden');
 }
 
 function hideOverlay() {
     overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('locked');
+    document.body.classList.remove('overflow-hidden');
 }
 
 function renderJob(job) {
@@ -44,8 +44,8 @@ function renderJob(job) {
     }
     orbTitle.textContent = job.current_title || job.message || 'Trabajando…';
     const stageMap = {
-        descargando: '⬇ Descargando audio',
-        'convirtiendo a mp3': '⚙ Convirtiendo a MP3…',
+        descargando: '⬇ Descargando audio original',
+        'guardando en biblioteca': '⚙ Guardando en tu biblioteca…',
         resolviendo: '🔍 Resolviendo URL…',
         listo: '✅ Listo'
     };

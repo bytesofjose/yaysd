@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from .downloader import cancel_job, download_audio, jobs_lock, jobs, start_job
 import uvicorn
 
-app = FastAPI(title="Guarda rolas")
+app = FastAPI(title="Guardarol")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
@@ -16,7 +16,7 @@ async def index(request: Request):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "guarda-rolas"}
+    return {"status": "ok", "service": "guardarol"}
 
 @app.post("/download")
 async def download(url: str = Form(...), sync: bool = False):

@@ -1,8 +1,10 @@
-# Guarda rolas
+# Guardarol
 
-LAN-only YouTube-to-MP3 library app. Paste a video, playlist or channel URL and
-tracks land in the music library as `Artist/Album/*.mp3` (same layout Navidrome
-and the `song-recommender` ⬇ button already consume).
+LAN-only YouTube audio library app. Paste a video, playlist or channel URL and
+tracks land in the music library as `Artist/Album/*` in the **original source
+format** (`bestaudio` as served — typically `.m4a` or `.opus`, no re-encode, no
+quality lost to transcoding). Same layout Navidrome and the
+`song-recommender` ⬇ button already consume.
 
 Live: `http://192.168.1.94:8000` (container `youtube_mp3_downloader`).
 

@@ -3,42 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guarda rolas</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>Guardarol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dracula: {
+                            bg: '#282a36',
+                            selection: '#44475a',
+                            fg: '#f8f8f2',
+                            comment: '#6272a4',
+                            cyan: '#8be9fd',
+                            green: '#50fa7b',
+                            orange: '#ffb86c',
+                            pink: '#ff79c6',
+                            purple: '#bd93f9',
+                            red: '#ff5555',
+                            yellow: '#f1fa8c',
+                        },
+                    },
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        @keyframes orbPulse {
+            0%, 100% { transform: rotate(-90deg) scale(1); }
+            50% { transform: rotate(-90deg) scale(1.05); }
+        }
+        @keyframes orbIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .orb-ring {
+            transform: rotate(-90deg);
+            filter: drop-shadow(0 0 12px rgba(189, 147, 249, 0.5));
+            animation: orbPulse 2.2s ease-in-out infinite;
+        }
+        .orb-fill {
+            transition: stroke-dashoffset 0.4s ease;
+        }
+        .orb-bar-fill {
+            transition: width 0.4s ease;
+        }
+        .orb-card {
+            animation: orbIn 0.35s ease;
+        }
+        #feedbackContainer {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        #feedbackContainer.success {
+            border: 1px solid #50fa7b;
+            color: #50fa7b;
+        }
+        #feedbackContainer.error {
+            border: 1px solid #ff5555;
+            color: #ff5555;
+        }
+    </style>
 </head>
-<body>
-    <div class="glass-container">
-        <h1>Guarda rolas</h1>
+<body class="font-outfit bg-dracula-bg text-dracula-fg min-h-screen flex justify-center items-center p-5 bg-fixed"
+      style="background-image: radial-gradient(at 0% 0%, rgba(189,147,249,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255,121,198,0.15) 0px, transparent 50%);">
+    <div class="bg-[#44475a]/40 backdrop-blur-xl border border-dracula-purple/20 rounded-3xl p-8 md:p-12 w-[90%] max-w-[600px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+        <h1 class="text-4xl md:text-[2.5rem] font-semibold mb-6 drop-shadow-[0_0_10px_rgba(189,147,249,0.3)]">
+            <span class="text-dracula-purple">Guarda</span><span class="text-dracula-pink">rol</span>
+        </h1>
 
         <form id="downloadForm">
-            <div class="input-group">
-                <input type="text" id="urlInput" placeholder="Video, playlist o canal… p. ej. youtube.com/@artista/videos" required>
-                <button type="submit" id="downloadBtn">Guardar</button>
+            <div class="flex flex-col md:flex-row gap-3 md:gap-2.5 bg-black/20 p-2 md:p-2 rounded-3xl md:rounded-full border border-dracula-purple/20 focus-within:border-dracula-purple focus-within:shadow-[0_0_15px_rgba(189,147,249,0.3)] transition-all">
+                <input type="text" id="urlInput" placeholder="Video, playlist o canal… p. ej. youtube.com/@artista/videos" required
+                       class="flex-1 bg-black/20 md:bg-transparent border border-dracula-purple/20 md:border-0 rounded-full px-5 py-3.5 md:py-3 text-base outline-none placeholder:text-dracula-comment/80 w-full box-border">
+                <button type="submit" id="downloadBtn"
+                        class="bg-dracula-purple text-dracula-bg rounded-full px-7 py-3.5 md:py-3 font-semibold cursor-pointer transition-all shadow-[0_4px_15px_rgba(189,147,249,0.2)] hover:bg-dracula-pink hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,121,198,0.4)] w-full md:w-auto box-border">
+                    Guardar
+                </button>
             </div>
         </form>
 
-        <div id="feedbackContainer" class="hidden">
-            <p id="feedbackText"></p>
-        </div>
-
-        <p class="subtitle">Desarrollado con ❤️ por <a href="https://github.com/joeis-dev">Joe</a></p>
+        <p class="mt-6 font-light text-dracula-comment">Desarrollado con ❤️ por <a href="https://github.com/joeis-dev" class="text-dracula-cyan font-semibold transition-all hover:text-dracula-pink">Joe</a></p>
     </div>
 
-    <div id="orbOverlay" class="hidden" aria-hidden="true">
-        <div class="orb-card" role="dialog" aria-label="Descargando">
-            <svg class="orb-ring" viewBox="0 0 120 120">
-                <circle class="orb-track" cx="60" cy="60" r="52"></circle>
-                <circle id="orbProgress" class="orb-fill" cx="60" cy="60" r="52"></circle>
+    <div id="feedbackContainer" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] px-6 py-4 rounded-full bg-[#282a36]/90 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-[min(90vw,480px)] text-center">
+        <p id="feedbackText"></p>
+    </div>
+
+    <div id="orbOverlay" class="hidden fixed inset-0 z-[9999] flex justify-center items-center bg-[#14151e]/55 backdrop-blur-[14px] p-5" aria-hidden="true">
+        <div class="orb-card relative bg-[#282a36]/85 border border-dracula-purple/20 rounded-3xl px-8 pt-10 pb-8 w-full max-w-[380px] text-center shadow-[0_0_60px_rgba(189,147,249,0.25),0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center gap-2.5" role="dialog" aria-label="Descargando">
+            <svg class="orb-ring w-[150px] h-[150px]" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#44475a" stroke-width="10"></circle>
+                <circle id="orbProgress" class="orb-fill" cx="60" cy="60" r="52" fill="none" stroke="#bd93f9" stroke-width="10" stroke-linecap="round"></circle>
             </svg>
-            <div id="orbPercent" class="orb-percent">0%</div>
-            <div id="orbCount" class="orb-count">Preparando…</div>
-            <div class="orb-bar"><div id="orbBarFill" class="orb-bar-fill"></div></div>
-            <p id="orbTitle" class="orb-title">Resolviendo URL…</p>
-            <p id="orbStage" class="orb-stage"></p>
-            <button id="orbCancel" type="button">Cancelar</button>
+            <div id="orbPercent" class="absolute top-[6.1rem] text-[1.6rem] font-semibold text-transparent bg-clip-text bg-gradient-to-r from-dracula-purple to-dracula-pink">0%</div>
+            <div id="orbCount" class="text-[0.95rem] text-dracula-cyan font-semibold">Preparando…</div>
+            <div class="w-full h-2.5 rounded-full bg-black/40 border border-dracula-purple/20 overflow-hidden"><div id="orbBarFill" class="orb-bar-fill h-full w-0 rounded-full bg-gradient-to-r from-dracula-purple to-dracula-pink shadow-[0_0_12px_rgba(255,121,198,0.6)]"></div></div>
+            <p id="orbTitle" class="text-sm max-w-full overflow-hidden text-ellipsis line-clamp-2 min-h-[2.4em]">Resolviendo URL…</p>
+            <p id="orbStage" class="text-xs text-dracula-comment min-h-[1.2em]"></p>
+            <button id="orbCancel" type="button" class="mt-2 bg-transparent border border-dracula-red text-dracula-red rounded-full px-6 py-2.5 font-semibold cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">Cancelar</button>
         </div>
     </div>
 
