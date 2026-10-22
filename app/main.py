@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from .downloader import cancel_job, download_audio, jobs_lock, jobs, start_job
+from .downloader import cancel_job, download_audio, jobs_lock, jobs, read_history, start_job
 import uvicorn
 
 app = FastAPI(title="Guardarol")
@@ -36,6 +36,10 @@ async def job_status(job_id: str):
         if not job:
             return JSONResponse(status_code=404, content={"status": "error", "message": "Job no encontrado."})
         return JSONResponse(content={k: v for k, v in job.items() if k != "cancelled"})
+
+@app.get("/api/history")
+async def history(limit: int = 50):
+    return JSONResponse(content={"history": read_history(limit=min(limit, 200))})
 
 @app.post("/api/job/{job_id}/cancel")
 async def job_cancel(job_id: str):

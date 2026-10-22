@@ -11,6 +11,10 @@
 </head>
 <body class="font-outfit bg-dracula-bg text-dracula-fg min-h-screen flex justify-center items-center p-5 bg-fixed"
       style="background-image: radial-gradient(at 0% 0%, rgba(189,147,249,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255,121,198,0.15) 0px, transparent 50%);">
+    <button id="historyBtn" type="button" title="Historial de descargas"
+            class="fixed top-4 right-4 z-[9000] bg-[#44475a]/60 backdrop-blur-md border border-dracula-purple/20 rounded-full px-4 py-2 text-sm font-semibold text-dracula-fg cursor-pointer transition-all hover:border-dracula-purple hover:shadow-[0_0_15px_rgba(189,147,249,0.3)]">
+        📋 Historial
+    </button>
     <div class="bg-[#44475a]/40 backdrop-blur-xl border border-dracula-purple/20 rounded-3xl p-8 md:p-12 w-[90%] max-w-[600px] text-center shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
         <h1 class="text-4xl md:text-[2.5rem] font-semibold mb-6 drop-shadow-[0_0_10px_rgba(189,147,249,0.3)]">
             <span class="text-dracula-purple">Guarda</span><span class="text-dracula-pink">rol</span>
@@ -30,8 +34,10 @@
         <p class="mt-6 font-light text-dracula-comment">Desarrollado con ❤️ por <a href="https://github.com/joeis-dev" class="text-dracula-cyan font-semibold transition-all hover:text-dracula-pink">Joe</a></p>
     </div>
 
-    <div id="feedbackContainer" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] px-6 py-4 rounded-full bg-[#282a36]/90 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-[min(90vw,480px)] text-center">
-        <p id="feedbackText"></p>
+    <div id="feedbackContainer" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] pl-6 pr-3 py-3 rounded-full bg-[#282a36]/90 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-[min(90vw,480px)] text-center flex items-center gap-2">
+        <p id="feedbackText" class="flex-1"></p>
+        <button id="feedbackClose" type="button" title="Cerrar"
+                class="shrink-0 w-7 h-7 rounded-full border border-dracula-comment/40 text-dracula-comment text-sm leading-none cursor-pointer transition-all hover:text-dracula-fg hover:border-dracula-fg">✕</button>
     </div>
 
     <div id="orbOverlay" class="hidden fixed inset-0 z-[9999] flex justify-center items-center bg-[#14151e]/55 backdrop-blur-[14px] p-5" aria-hidden="true">
@@ -46,6 +52,17 @@
             <p id="orbTitle" class="text-sm max-w-full overflow-hidden text-ellipsis line-clamp-2 min-h-[2.4em]">Resolviendo URL…</p>
             <p id="orbStage" class="text-xs text-dracula-comment min-h-[1.2em]"></p>
             <button id="orbCancel" type="button" class="mt-2 bg-transparent border border-dracula-red text-dracula-red rounded-full px-6 py-2.5 font-semibold cursor-pointer transition-all hover:bg-dracula-red hover:text-dracula-bg">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="historyOverlay" class="hidden fixed inset-0 z-[9500] bg-[#14151e]/60 backdrop-blur-[10px] p-4 md:p-8 flex justify-center items-start overflow-y-auto" aria-hidden="true">
+        <div class="bg-[#282a36]/95 border border-dracula-purple/20 rounded-3xl w-full max-w-[640px] p-6 md:p-8 my-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]" role="dialog" aria-label="Historial de descargas">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold">📋 Historial</h2>
+                <button id="historyClose" type="button" title="Cerrar"
+                        class="w-8 h-8 rounded-full border border-dracula-comment/40 text-dracula-comment cursor-pointer transition-all hover:text-dracula-fg hover:border-dracula-fg">✕</button>
+            </div>
+            <div id="historyList" class="flex flex-col gap-3 text-left"></div>
         </div>
     </div>
 

@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     BASE_MUSIC_PATH: Path = Path("/mnt/data_pool/music")
     LOG_FILE: Path = Path("/app/logs/downloader.log")
+    HISTORY_FILE: Path = Path("/app/logs/history.jsonl")
     COOKIES_FILE: Path = Path("/app/cookies.txt")
     LASTFM_API_KEY: str = ""
     LASTFM_API_SECRET: str = ""
