@@ -59,6 +59,7 @@ def _new_job(url, ip=""):
             "skipped": 0,
             "dl_started": None,
             "command": "",
+            "library": str(settings.BASE_MUSIC_PATH),
         }
     return job_id
 
@@ -98,7 +99,8 @@ def _save_history(job_id):
             "created": job.get("created"),
             "finished": job.get("finished"),
             "items": [{"title": it.get("title", ""), "status": it.get("status", ""),
-                       "error": it.get("error", "")} for it in job.get("items", [])],
+                       "error": it.get("error", ""), "path": it.get("path", "")}
+                      for it in job.get("items", [])],
         }
         settings.HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
         with open(settings.HISTORY_FILE, "a", encoding="utf-8") as f:
@@ -255,8 +257,8 @@ def _snapshot(job_id):
             "ip": job.get("ip", ""),
             "command": job.get("command", ""),
             "items": [{"url": it.get("url", ""), "title": it.get("title", ""),
-                       "status": it.get("status", "pending"), "error": it.get("error", "")}
-                      for it in job["items"]],
+                       "status": it.get("status", "pending"), "error": it.get("error", ""),
+                       "path": it.get("path", "")} for it in job["items"]],
             "created": job.get("created"),
         }
         (settings.STATE_DIR / f"{job_id}.json").write_text(
@@ -312,8 +314,10 @@ def _process(job_id):
 
         item_ok = True
         item_skipped = False
+        item_path = ""
         try:
             path, title, item_skipped = _download_one(entry["url"], hook)
+            item_path = path
             if item_skipped:
                 skipped += 1
             else:
@@ -331,7 +335,8 @@ def _process(job_id):
             if i < len(job_items):
                 job_items[i] = {"url": entry["url"], "title": title,
                                 "status": "fail" if not item_ok else ("skipped" if item_skipped else "ok"),
-                                "error": "" if item_ok else err}
+                                "error": "" if item_ok else err,
+                                "path": item_path}
             jobs[job_id]["items"] = job_items
             jobs[job_id]["done"] = ok + failed + skipped
             jobs[job_id]["failed"] = failed
@@ -432,8 +437,8 @@ def _resume_one_file(job_id, reason="Reanudado manualmente"):
     _update(new_id, status="downloading", total=len(items),
             command=snap.get("command", ""),
             items=[{"url": it.get("url", ""), "title": it.get("title", ""),
-                    "status": it.get("status", "pending"), "error": it.get("error", "")}
-                   for it in items],
+                    "status": it.get("status", "pending"), "error": it.get("error", ""),
+                    "path": it.get("path", "")} for it in items],
             done=sum(1 for it in items if it.get("status") in ("ok", "skipped")),
             failed=sum(1 for it in items if it.get("status") == "fail"),
             skipped=sum(1 for it in items if it.get("status") == "skipped"),

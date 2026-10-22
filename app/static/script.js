@@ -289,6 +289,11 @@ function openDetails(id, focus = '') {
     const items = job.items || [];
     const fails = items.filter((it) => it.status === 'fail');
     const warns = items.filter((it) => it.status === 'skipped');
+    const withPath = items.find((it) => it.path);
+    const destDir = withPath
+        ? withPath.path.split('/').slice(0, -1).join('/')
+        : `${job.library || '/mnt/data_pool/music'}/Artista/Álbum`;
+    const destNote = withPath ? '' : ' (se resuelve por metadata al descargar)';
     const elapsed = job.finished && job.created
         ? fmtDur(job.duration ?? (job.finished - job.created))
         : (job.created ? fmtDur(Date.now() / 1000 - job.created) + ' (en curso)' : '—');
@@ -309,6 +314,7 @@ function openDetails(id, focus = '') {
             <div><p class="text-dracula-comment">Tiempo transcurrido</p><p class="text-dracula-fg font-semibold">${esc(elapsed)}</p></div>
             <div><p class="text-dracula-comment">Items</p><p class="text-dracula-fg font-semibold">${job.total || items.length}</p></div>
             <div class="col-span-2"><p class="text-dracula-comment">URL</p><p class="text-dracula-fg break-all">${esc(job.url)}</p></div>
+            <div class="col-span-2"><p class="text-dracula-comment">Destino final</p><p class="text-dracula-fg break-all font-mono text-xs">${esc(destDir)}<span class="text-dracula-comment">${esc(destNote)}</span></p></div>
         </div>
         ${warnsHtml}
         ${errsHtml}`;
