@@ -4,71 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guardarol</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dracula: {
-                            bg: '#282a36',
-                            selection: '#44475a',
-                            fg: '#f8f8f2',
-                            comment: '#6272a4',
-                            cyan: '#8be9fd',
-                            green: '#50fa7b',
-                            orange: '#ffb86c',
-                            pink: '#ff79c6',
-                            purple: '#bd93f9',
-                            red: '#ff5555',
-                            yellow: '#f1fa8c',
-                        },
-                    },
-                    fontFamily: {
-                        outfit: ['Outfit', 'sans-serif'],
-                    },
-                },
-            },
-        };
-    </script>
+    <link rel="stylesheet" href="/static/tailwind.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        @keyframes orbPulse {
-            0%, 100% { transform: rotate(-90deg) scale(1); }
-            50% { transform: rotate(-90deg) scale(1.05); }
-        }
-        @keyframes orbIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        .orb-ring {
-            transform: rotate(-90deg);
-            filter: drop-shadow(0 0 12px rgba(189, 147, 249, 0.5));
-            animation: orbPulse 2.2s ease-in-out infinite;
-        }
-        .orb-fill {
-            transition: stroke-dashoffset 0.4s ease;
-        }
-        .orb-bar-fill {
-            transition: width 0.4s ease;
-        }
-        .orb-card {
-            animation: orbIn 0.35s ease;
-        }
-        #feedbackContainer {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        #feedbackContainer.success {
-            border: 1px solid #50fa7b;
-            color: #50fa7b;
-        }
-        #feedbackContainer.error {
-            border: 1px solid #ff5555;
-            color: #ff5555;
-        }
-    </style>
 </head>
 <body class="font-outfit bg-dracula-bg text-dracula-fg min-h-screen flex justify-center items-center p-5 bg-fixed"
       style="background-image: radial-gradient(at 0% 0%, rgba(189,147,249,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255,121,198,0.15) 0px, transparent 50%);">

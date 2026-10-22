@@ -29,6 +29,17 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+## UI
+
+Tailwind CSS v3, vendored locally (`app/static/tailwind.css`, offline-safe —
+no CDN). Source: `app/static/input.css` + `tailwind.config.js` (Dracula
+palette). Rebuild after changing classes:
+
+```bash
+npm install
+npx tailwindcss -c ./tailwind.config.js -i ./app/static/input.css -o ./app/static/tailwind.css --minify
+```
+
 ## Deploy
 
 Push to `main` → Forgejo pipeline (`joe/guarda-rolas`) syncs code to the

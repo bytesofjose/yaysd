@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes orbPulse {
+    0%, 100% { transform: rotate(-90deg) scale(1); }
+    50% { transform: rotate(-90deg) scale(1.05); }
+}
+
+@keyframes orbIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.orb-ring {
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 0 12px rgba(189, 147, 249, 0.5));
+    animation: orbPulse 2.2s ease-in-out infinite;
+}
+
+.orb-fill {
+    transition: stroke-dashoffset 0.4s ease;
+}
+
+.orb-bar-fill {
+    transition: width 0.4s ease;
+}
+
+.orb-card {
+    animation: orbIn 0.35s ease;
+}
+
+#feedbackContainer {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#feedbackContainer.success {
+    border: 1px solid #50fa7b;
+    color: #50fa7b;
+}
+
+#feedbackContainer.error {
+    border: 1px solid #ff5555;
+    color: #ff5555;
+}
