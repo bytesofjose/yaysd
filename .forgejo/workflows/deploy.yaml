@@ -1,0 +1,32 @@
+name: guarda-rolas
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: python3 -m py_compile app/*.py
+
+  deploy:
+    needs: test
+    runs-on: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync to service dir (code only)
+        run: |
+          rsync -av --delete \
+            --exclude='.env' \
+            --exclude='logs/' \
+            --exclude='cookies.txt' \
+            --exclude='**/__pycache__/' \
+            ./ /home/joe/services/my-services/youtube_mp3_downloader/
+      - name: Build and redeploy
+        run: |
+          cd /home/joe/services/my-services/youtube_mp3_downloader
+          docker compose up -d --build --remove-orphans
+      - name: Healthcheck
+        run: sleep 10 && curl -sf http://localhost:8000/api/health
