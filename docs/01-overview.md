@@ -2,8 +2,9 @@
 
 LAN-only YouTube audio library app. Paste a video, playlist or channel URL and
 tracks land in the music library as `Artist/Album/*` in the **original source
-format** (`bestaudio` as served — typically `.m4a` or `.opus`, no re-encode, no
-quality lost to transcoding). Same layout Navidrome and the
+audio, normalized to audio-only `.m4a` without re-encode** (`ffmpeg -map 0:a -c copy`;
+YouTube `bestaudio` often arrives as `.mp4` containers that Navidrome ignores —
+verified 0/184 `.mp4` indexed vs 81 `.m4a`). No album in metadata → `Single EP`. Same layout Navidrome and the
 `song-recommender` ⬇ button already consume.
 
 Live: `http://192.168.1.94:8000` (container `youtube_mp3_downloader`).
