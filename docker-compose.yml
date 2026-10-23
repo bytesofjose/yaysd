@@ -1,17 +1,9 @@
 services:
-<<<<<<< HEAD
   yt-downloader:
     build:
       context: .
       network: host
     container_name: youtube_mp3_downloader
-=======
-  yaysd:
-    build:
-      context: .
-      network: host
-    container_name: yaysd
->>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
     user: "1000:1000"
     ports:
       - "${PORT:-8000}:8000"

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import logging
 import shutil
 import subprocess
@@ -19,16 +18,6 @@ NATIVE_AUDIO_EXTS = {"mp3", "m4a", "opus", "ogg", "oga", "flac", "wma", "wav", "
 MIN_AUDIO_BITRATE = 120_000
 
 
-=======
-import yt_dlp
-import os
-import shutil
-import logging
-from pathlib import Path
-from .config import settings
-
-# Setup logging
->>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
 def setup_logging():
     handlers = [logging.StreamHandler()]
     try:
@@ -44,7 +33,6 @@ def setup_logging():
         handlers=handlers
     )
 
-<<<<<<< HEAD
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -302,7 +290,7 @@ def _tag_and_cover(audio_in, thumb_path, title, artist, album, dst_tmp):
         raise RuntimeError(f"ffmpeg tag/cover failed: {(r.stderr or '').strip()[:200]}")
 
 
-def _download_one(entry_url, progress_cb):
+def _download_one(entry_url, progress_cb, job_id=""):
     """Returns (path, title, skipped). Audio-only .m4a unless source is a native audio ext."""
     ydl_opts = _base_opts({
         'format': 'bestaudio/best',
@@ -322,9 +310,9 @@ def _download_one(entry_url, progress_cb):
         if dest_file.is_file():
             br = _audio_bitrate(dest_file)
             if br >= MIN_AUDIO_BITRATE:
-                logger.info(f"SKIP exists ({br // 1000}k): {dest_file}")
+                logger.info(f"Job {job_id}: SKIP exists ({br // 1000}k): {dest_file}")
                 return str(dest_file), meta.get("title", Path(temp_name).stem), True
-            logger.info(f"STALE low-bitrate ({br // 1000}k < {MIN_AUDIO_BITRATE // 1000}k), re-downloading: {dest_file}")
+            logger.info(f"Job {job_id}: STALE low-bitrate ({br // 1000}k < {MIN_AUDIO_BITRATE // 1000}k), re-downloading: {dest_file}")
         info = ydl.extract_info(entry_url, download=True)
         temp_file = Path(ydl.prepare_filename(info))
         final_name = _final_name(temp_file.name)
@@ -433,7 +421,7 @@ def _process(job_id):
         item_skipped = False
         item_path = ""
         try:
-            path, title, item_skipped = _download_one(entry["url"], hook)
+            path, title, item_skipped = _download_one(entry["url"], hook, job_id)
             item_path = path
             if item_skipped:
                 skipped += 1
@@ -591,75 +579,6 @@ def download_audio(url: str):
             "message": "Cancion descargada ✅",
             "path": path
         }
-=======
-setup_logging()
-logger = logging.getLogger(__name__)
-
-def get_metadata(info):
-    """Extract artist and album from yt-dlp info or fallback."""
-    artist = info.get('artist') or info.get('uploader') or "Unknown Artist"
-    album = info.get('album') or "Singles"
-    
-    # Simple cleaning for path safety
-    artist = "".join([c for c in artist if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
-    album = "".join([c for c in album if c.isalnum() or c in (' ', '.', '_', '-')]).strip()
-    
-    return artist, album
-
-def download_audio(url: str):
-    try:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': '/tmp/%(title)s.%(ext)s',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '0',
-            }, {
-                'key': 'EmbedThumbnail',
-            }, {
-                'key': 'FFmpegMetadata',
-            }],
-            'writethumbnail': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['android', 'web'],
-                    'skip': ['dash', 'hls']
-                }
-            }
-        }
-
-        # Use cookies if the file exists and is a file (not a directory mount)
-        if settings.COOKIES_FILE.is_file():
-            logger.info(f"Using cookies from {settings.COOKIES_FILE}")
-            ydl_opts['cookiefile'] = str(settings.COOKIES_FILE)
-        else:
-            logger.warning(f"No valid cookies.txt found at {settings.COOKIES_FILE} (or it is a directory). Bot detection might occur.")
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            logger.info(f"Starting download for URL: {url}")
-            info = ydl.extract_info(url, download=True)
-            
-            temp_file = Path(ydl.prepare_filename(info)).with_suffix('.mp3')
-            artist, album = get_metadata(info)
-            
-            # Construct final path
-            dest_dir = settings.BASE_MUSIC_PATH / artist / album
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            
-            final_path = dest_dir / temp_file.name
-            
-            # Move file
-            shutil.move(str(temp_file), str(final_path))
-            
-            logger.info(f"Successfully downloaded and moved to: {final_path}")
-            return {
-                "status": "success",
-                "message": f"Descargada exitosamente en {final_path}",
-                "path": str(final_path)
-            }
-
->>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
     except Exception as e:
         logger.error(f"Error downloading {url}: {str(e)}")
         return {

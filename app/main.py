@@ -2,7 +2,6 @@ from fastapi import FastAPI, Form, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-<<<<<<< HEAD
 from .downloader import cancel_job, clear_history, delete_history_record, download_audio, jobs_lock, jobs, pause_job, read_history, resume_interrupted, resume_job, start_job
 import uvicorn
 
@@ -14,14 +13,6 @@ async def _resume():
     if n:
         print(f"Guardarol: resumed {n} interrupted job(s)")
 
-=======
-from .downloader import download_audio
-import uvicorn
-
-app = FastAPI()
-
-# Mount static files and templates
->>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
@@ -29,7 +20,6 @@ templates = Jinja2Templates(directory="app/templates")
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-<<<<<<< HEAD
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "guardarol"}
@@ -91,12 +81,6 @@ async def job_cancel(job_id: str):
     if cancel_job(job_id):
         return JSONResponse(content={"status": "cancelled"})
     return JSONResponse(status_code=404, content={"status": "error", "message": "Job no encontrado o ya terminó."})
-=======
-@app.post("/download")
-async def download(url: str = Form(...)):
-    result = download_audio(url)
-    return JSONResponse(content=result)
->>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
 
 if __name__ == "__main__":
     from .config import settings
