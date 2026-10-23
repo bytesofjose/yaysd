@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const form = document.getElementById('downloadForm');
 const urlInput = document.getElementById('urlInput');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -137,10 +138,31 @@ form.addEventListener('submit', async (e) => {
     downloadBtn.disabled = true;
     showOverlay();
     renderJob({ percent: 0, total: 0, done: 0, current_title: '', stage: 'resolviendo', message: 'Resolviendo URL…' });
+=======
+document.getElementById('downloadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const urlInput = document.getElementById('urlInput');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const feedbackContainer = document.getElementById('feedbackContainer');
+    const feedbackText = document.getElementById('feedbackText');
+    const loader = feedbackContainer.querySelector('.loader');
+    
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    // Reset UI
+    feedbackContainer.classList.remove('hidden', 'success', 'error');
+    loader.classList.remove('hidden');
+    feedbackText.textContent = 'Procesando descarga... Por favor espera.';
+    downloadBtn.disabled = true;
+    downloadBtn.style.opacity = '0.5';
+>>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
 
     try {
         const formData = new FormData();
         formData.append('url', url);
+<<<<<<< HEAD
         const res = await fetch('/download', { method: 'POST', body: formData });
         const data = await res.json();
         if (!data.job_id) throw new Error(data.message || 'sin job');
@@ -456,3 +478,32 @@ async function reattach() {
 }
 
 reattach();
+=======
+
+        const response = await fetch('/download', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        
+        loader.classList.add('hidden');
+        feedbackText.textContent = data.message;
+        
+        if (data.status === 'success') {
+            feedbackContainer.classList.add('success');
+            urlInput.value = ''; // Clean input on success
+        } else {
+            feedbackContainer.classList.add('error');
+        }
+
+    } catch (error) {
+        loader.classList.add('hidden');
+        feedbackContainer.classList.add('error');
+        feedbackText.textContent = 'Error de conexión con el servidor.';
+    } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.style.opacity = '1';
+    }
+});
+>>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d

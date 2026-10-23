@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
 .env
@@ -5,3 +6,7 @@ logs/
 data/
 cookies.txt
 node_modules/
+=======
+logs/downloader.log
+.env
+>>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d

@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>Guardarol</title>
     <link rel="stylesheet" href="/static/tailwind.css">
+=======
+    <title>Yet Another YouTube Song Downloader</title>
+    <link rel="stylesheet" href="/static/style.css">
+>>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
+<<<<<<< HEAD
 <body class="font-outfit bg-dracula-bg text-dracula-fg min-h-screen flex justify-center items-center p-5 bg-fixed"
       style="background-image: radial-gradient(at 0% 0%, rgba(189,147,249,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255,121,198,0.15) 0px, transparent 50%);">
     <button id="historyBtn" type="button" title="Historial de descargas"
@@ -82,6 +88,26 @@
         </div>
     </div>
 
+=======
+<body>
+    <div class="glass-container">
+        <h1>Yet Another YouTube Song Downloader</h1>
+        
+        <form id="downloadForm">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Pega la URL del video aquí..." required>
+                <button type="submit" id="downloadBtn">Descargar</button>
+            </div>
+        </form>
+
+        <div id="feedbackContainer" class="hidden">
+            <div class="loader hidden"></div>
+            <p id="feedbackText"></p>
+        </div>
+
+        <p class="subtitle">Desarrollado con ❤️ por <a href="https://github.com/joeis-dev">Joe</a></p>
+    </div>
+>>>>>>> ed76a6993d95e6e0ce87e137bae0a38c8ff30b7d
     <script src="/static/script.js"></script>
 </body>
 </html>
