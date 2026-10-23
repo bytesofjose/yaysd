@@ -78,7 +78,7 @@ def has_title_tag(path):
 
 
 def process(src, title, artist, album, thumb_url, keep_ext):
-    dest_dir = MUSIC / artist / album
+    dest_dir = MUSIC / album
     dest_dir.mkdir(parents=True, exist_ok=True)
     final_name = src.stem + (".mp3" if keep_ext == "mp3" else ".m4a")
     if keep_ext == "mp3" and has_title_tag(src):
@@ -135,8 +135,9 @@ def main():
             continue
         title, url, uploader, thumb = hit
         artist = existing_artist(uploader or "Mik4000")
-        album = clean(title)[:100] or "Single EP"
-        if (MUSIC / artist / album / (src.stem + src.suffix)).is_file():
+        base = clean(title)[:90]
+        album = f"{base} (EP)" if base else "Single EP"
+        if (MUSIC / album / (src.stem + src.suffix)).is_file():
             skip += 1
             continue
         try:

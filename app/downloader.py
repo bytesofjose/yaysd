@@ -172,7 +172,8 @@ def get_metadata(info):
     artist = _clean(info.get('artist') or info.get('uploader')) or "Unknown Artist"
     album = _clean(info.get('album') or info.get('playlist'))
     if not album:
-        album = _clean(info.get('title'))[:100] or "Single EP"
+        base = _clean(info.get('title'))[:90]
+        album = f"{base} (EP)" if base else "Single EP"
     return artist or "Unknown Artist", album or "Singles"
 
 
