@@ -5,7 +5,7 @@ tracks land in the music library as `Artist/Album/*` in the **original source
 audio, normalized to audio-only `.m4a` without re-encode** (`ffmpeg -map 0:a -c copy`;
 YouTube `bestaudio` often arrives as `.mp4` containers that Navidrome ignores —
 verified 0/184 `.mp4` indexed vs 81 `.m4a`). No album in metadata → one folder
-per song named after the track. Every file gets YouTube cover art embedded
+per song named `{track title} (EP)`. Every file gets YouTube cover art embedded
 (`attached_pic`) plus `title/artist/album` tags. Same layout Navidrome and the
 `song-recommender` ⬇ button already consume.
 
