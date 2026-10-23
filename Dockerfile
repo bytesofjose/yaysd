@@ -3,9 +3,10 @@ FROM python:3.11-slim-bookworm
 # Explicitly use noninteractive frontend
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install ffmpeg with retries and verbose output to diagnose failures
+# Update and install ffmpeg + nodejs (JS runtime for yt-dlp format extraction)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

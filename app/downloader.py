@@ -15,6 +15,7 @@ from .config import settings
 MAX_ITEMS = 100
 HISTORY_LIMIT = 200
 NATIVE_AUDIO_EXTS = {"mp3", "m4a", "opus", "ogg", "oga", "flac", "wma", "wav", "aiff"}
+MIN_AUDIO_BITRATE = 120_000
 
 
 def setup_logging():
@@ -186,7 +187,6 @@ def _base_opts(extra=None):
         'extractor_args': {
             'youtube': {
                 'player_client': ['android', 'web'],
-                'skip': ['dash', 'hls']
             }
         },
     }
@@ -221,6 +221,18 @@ def resolve_entries(url, limit=MAX_ITEMS):
         if len(out) >= limit:
             break
     return out
+
+
+def _audio_bitrate(path):
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=bit_rate", "-of", "default=noprint_wrappers=1:nokey=1",
+             str(path)],
+            capture_output=True, text=True, timeout=30)
+        return int((r.stdout or "").strip() or 0)
+    except Exception:
+        return 0
 
 
 def _final_name(temp_name):
@@ -294,10 +306,13 @@ def _download_one(entry_url, progress_cb):
         artist, album = get_metadata(meta)
         dest_dir = settings.BASE_MUSIC_PATH / artist / album
         final_name = _final_name(temp_name)
-        if (dest_dir / final_name).is_file():
-            existing = dest_dir / final_name
-            logger.info(f"SKIP exists: {existing}")
-            return str(existing), meta.get("title", Path(temp_name).stem), True
+        dest_file = dest_dir / final_name
+        if dest_file.is_file():
+            br = _audio_bitrate(dest_file)
+            if br >= MIN_AUDIO_BITRATE:
+                logger.info(f"SKIP exists ({br // 1000}k): {dest_file}")
+                return str(dest_file), meta.get("title", Path(temp_name).stem), True
+            logger.info(f"STALE low-bitrate ({br // 1000}k < {MIN_AUDIO_BITRATE // 1000}k), re-downloading: {dest_file}")
         info = ydl.extract_info(entry_url, download=True)
         temp_file = Path(ydl.prepare_filename(info))
         final_name = _final_name(temp_file.name)
